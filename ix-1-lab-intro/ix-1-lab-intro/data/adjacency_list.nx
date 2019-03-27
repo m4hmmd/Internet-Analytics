@@ -1,0 +1,7 @@
+# Each row contains a list of connections (a connected to b, b connected to d
+# and e, ...)
+a b f
+b c d 
+c e f
+d e
+e f

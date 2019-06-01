@@ -11793,7 +11793,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[54]:</div>
+<div class="prompt input_prompt">In&nbsp;[114]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">pickle</span>
@@ -11826,7 +11826,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[55]:</div>
+<div class="prompt input_prompt">In&nbsp;[115]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Check the number of courses</span>
@@ -11858,7 +11858,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[56]:</div>
+<div class="prompt input_prompt">In&nbsp;[116]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Check the first course&#39;s description without pre-processing</span>
@@ -11894,13 +11894,173 @@ The latest developments in processing and the novel generations of organic compo
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="First,-remove-the-stopwords-and-punctuation.">First, remove the stopwords and punctuation.<a class="anchor-link" href="#First,-remove-the-stopwords-and-punctuation.">&#182;</a></h3>
+<h3 id="Split-camel-case-words">Split camel case words<a class="anchor-link" href="#Split-camel-case-words">&#182;</a></h3>
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[57]:</div>
+<div class="prompt input_prompt">In&nbsp;[117]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">CAPITAL_LETTERS</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">chr</span><span class="p">(</span><span class="nb">ord</span><span class="p">(</span><span class="s1">&#39;A&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">26</span><span class="p">))</span>
+
+<span class="k">for</span> <span class="n">course</span> <span class="ow">in</span> <span class="n">courses</span><span class="p">:</span>
+    <span class="n">desc_lst</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">course</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">():</span>
+        <span class="c1"># Split up camelcase words like &quot;materialsConstituentsProcessing&quot; </span>
+        <span class="c1"># that were not parsed correctly and ended up as camel case.</span>
+        <span class="c1"># But do not split up acronyms like &quot;IT&quot;</span>
+        <span class="n">words</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">words</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)):</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="c1"># Start the first word</span>
+                    <span class="n">start</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="k">elif</span> <span class="n">i</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span> <span class="c1"># Add the final word</span>
+                    <span class="n">words</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">word</span><span class="p">[</span><span class="n">start</span><span class="p">:])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">is_prev_capital</span> <span class="o">=</span> <span class="n">word</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="n">CAPITAL_LETTERS</span>
+                    <span class="n">is_curr_capital</span> <span class="o">=</span> <span class="n">word</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="ow">in</span> <span class="n">CAPITAL_LETTERS</span>
+                    <span class="n">is_next_capital</span> <span class="o">=</span> <span class="n">word</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="n">CAPITAL_LETTERS</span>
+                    <span class="k">if</span> <span class="n">is_curr_capital</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">is_prev_capital</span><span class="p">:</span>
+                            <span class="k">if</span> <span class="n">is_next_capital</span><span class="p">:</span>
+                                <span class="c1"># part of acronym</span>
+                                <span class="k">continue</span>
+                            <span class="k">else</span><span class="p">:</span>
+                                <span class="c1"># end of acronym and beginning of new word</span>
+                                <span class="n">words</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">word</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">i</span><span class="p">])</span>
+                                <span class="n">start</span> <span class="o">=</span> <span class="n">i</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="c1"># start of new word or acronym</span>
+                            <span class="n">start</span> <span class="o">=</span> <span class="n">i</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">is_next_capital</span><span class="p">:</span>
+                            <span class="c1"># end of a word or acronym</span>
+                            <span class="n">words</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">word</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="c1"># part of a word</span>
+                            <span class="k">continue</span>       
+                        <span class="c1">#endif</span>
+                    <span class="c1">#endif</span>
+                <span class="c1">#endif</span>
+            <span class="c1">#endfor</span>
+        <span class="c1">#endif</span>
+        <span class="n">desc_lst</span> <span class="o">+=</span> <span class="n">words</span>
+    <span class="n">course</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">desc_lst</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[118]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Check the first course&#39;s description after camel case splitting</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">courses</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;courseId&#39;</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">courses</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;description&#39;</span><span class="p">])</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt"></div>
+
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>MSE-440
+The latest developments in processing and the novel generations of organic composites are discussed. Nanocomposites, adaptive composites and biocomposites are presented. Product development, cost analysis and study of new markets are practiced in team work. Content Basics of composite materials Constituents Processing of composites Design of composite structures Current development Nanocomposites Textile composites Biocomposites Adaptive composites Applications Driving forces and markets Cost analysis Aerospace Automotive Sport Keywords Composites - Applications - Nanocomposites - Biocomposites - Adaptive composites - Design - Cost Learning Prerequisites Required courses Notion of polymers Recommended courses Polymer Composites Learning Outcomes By the end of the course, the student must be able to: Propose suitable design, production and performance criteria for the production of a composite part Apply the basic equations for process and mechanical properties modelling for composite materials Discuss the main types of composite applications Transversal skills Use a work methodology appropriate to the task. Use both general and domain specific IT resources and tools Communicate effectively with professionals from other disciplines. Evaluate one&#39;s own performance in the team, receive and respond appropriately to feedback. Teaching methods Ex cathedra and invited speakers Group sessions with exercises or work on the project Expected student activities Attendance at lectures Design of a composite part, bibliography search Assessment methods Written exam report and oral presentation in class
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h3 id="Remove-punctuation">Remove punctuation<a class="anchor-link" href="#Remove-punctuation">&#182;</a></h3>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[119]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Remove the punctuation (except apostrophe which is used in stop words)</span>
+<span class="n">punctuation_table</span> <span class="o">=</span> <span class="s2">&quot;[</span><span class="si">{}</span><span class="s2">]+&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">string</span><span class="o">.</span><span class="n">punctuation</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\&#39;</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)))</span>
+
+<span class="k">for</span> <span class="n">course</span> <span class="ow">in</span> <span class="n">courses</span><span class="p">:</span>
+    <span class="n">course</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">punctuation_table</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="p">,</span> <span class="n">course</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">])</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[120]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Check the first course&#39;s description </span>
+<span class="nb">print</span><span class="p">(</span><span class="n">courses</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;courseId&#39;</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">courses</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;description&#39;</span><span class="p">])</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt"></div>
+
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>MSE-440
+The latest developments in processing and the novel generations of organic composites are discussed  Nanocomposites  adaptive composites and biocomposites are presented  Product development  cost analysis and study of new markets are practiced in team work  Content Basics of composite materials Constituents Processing of composites Design of composite structures Current development Nanocomposites Textile composites Biocomposites Adaptive composites Applications Driving forces and markets Cost analysis Aerospace Automotive Sport Keywords Composites   Applications   Nanocomposites   Biocomposites   Adaptive composites   Design   Cost Learning Prerequisites Required courses Notion of polymers Recommended courses Polymer Composites Learning Outcomes By the end of the course  the student must be able to  Propose suitable design  production and performance criteria for the production of a composite part Apply the basic equations for process and mechanical properties modelling for composite materials Discuss the main types of composite applications Transversal skills Use a work methodology appropriate to the task  Use both general and domain specific IT resources and tools Communicate effectively with professionals from other disciplines  Evaluate one&#39;s own performance in the team  receive and respond appropriately to feedback  Teaching methods Ex cathedra and invited speakers Group sessions with exercises or work on the project Expected student activities Attendance at lectures Design of a composite part  bibliography search Assessment methods Written exam report and oral presentation in class
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h3 id="Remove-stop-words,-then-remove-leftover-apostrophes">Remove stop words, then remove leftover apostrophes<a class="anchor-link" href="#Remove-stop-words,-then-remove-leftover-apostrophes">&#182;</a></h3>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[121]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Function that remove all the words in a words_list from course descriptions</span>
@@ -11920,7 +12080,7 @@ The latest developments in processing and the novel generations of organic compo
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[58]:</div>
+<div class="prompt input_prompt">In&nbsp;[122]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Function that capitalizes all the words in a words_list</span>
@@ -11938,7 +12098,7 @@ The latest developments in processing and the novel generations of organic compo
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[59]:</div>
+<div class="prompt input_prompt">In&nbsp;[123]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">capitalized_stopwords</span> <span class="o">=</span> <span class="n">capitalize_words</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">stopwords</span><span class="p">))</span>
@@ -11951,7 +12111,7 @@ The latest developments in processing and the novel generations of organic compo
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[60]:</div>
+<div class="prompt input_prompt">In&nbsp;[124]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Remove the stopwords and capitalized_stopwords</span>
@@ -11966,14 +12126,12 @@ The latest developments in processing and the novel generations of organic compo
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[61]:</div>
+<div class="prompt input_prompt">In&nbsp;[125]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Remove the punctuation</span>
-<span class="n">punctuation_table</span> <span class="o">=</span> <span class="nb">str</span><span class="o">.</span><span class="n">maketrans</span><span class="p">({</span><span class="n">key</span><span class="p">:</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">string</span><span class="o">.</span><span class="n">punctuation</span><span class="p">})</span>
-
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Remove hanging apostrophes to join possesive &quot;s&quot; with the word</span>
 <span class="k">for</span> <span class="n">course</span> <span class="ow">in</span> <span class="n">courses</span><span class="p">:</span>
-    <span class="n">course</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">course</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">translate</span><span class="p">(</span><span class="n">punctuation_table</span><span class="p">)</span>
+    <span class="n">course</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">course</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;&#39;&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -11983,7 +12141,68 @@ The latest developments in processing and the novel generations of organic compo
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[62]:</div>
+<div class="prompt input_prompt">In&nbsp;[126]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Check the first course&#39;s description without stop words</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">courses</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;courseId&#39;</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">courses</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;description&#39;</span><span class="p">])</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt"></div>
+
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>MSE-440
+latest developments processing generations organic composites discussed Nanocomposites adaptive composites biocomposites presented Product development cost analysis study markets practiced team work Content Basics composite materials Constituents Processing composites Design composite structures Current development Nanocomposites Textile composites Biocomposites Adaptive composites Applications Driving forces markets Cost analysis Aerospace Automotive Sport Keywords Composites Applications Nanocomposites Biocomposites Adaptive composites Design Cost Learning Prerequisites Required courses Notion polymers Recommended courses Polymer Composites Learning Outcomes end student Propose suitable design production performance criteria production composite part Apply basic equations process mechanical properties modelling composite materials Discuss main types composite applications Transversal skills work methodology task general domain specific IT resources tools Communicate effectively professionals disciplines Evaluate ones performance team receive respond appropriately feedback Teaching methods cathedra invited speakers Group sessions exercises work project Expected student activities Attendance lectures Design composite part bibliography search Assessment methods Written exam report oral presentation class
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h3 id="Stem-the-words-with-nltk-library.">Stem the words with nltk library.<a class="anchor-link" href="#Stem-the-words-with-nltk-library.">&#182;</a></h3>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[127]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">ps</span> <span class="o">=</span> <span class="n">PS</span><span class="p">()</span>
+
+<span class="k">for</span> <span class="n">course</span> <span class="ow">in</span> <span class="n">courses</span><span class="p">:</span>
+    <span class="n">desc_lst</span> <span class="o">=</span> <span class="n">course</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">desc_lst</span><span class="p">)):</span>
+        <span class="n">desc_lst</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">ps</span><span class="o">.</span><span class="n">stem</span><span class="p">(</span><span class="n">desc_lst</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+    <span class="n">course</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">course</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">desc_lst</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[128]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Check the first course&#39;s description</span>
@@ -12006,7 +12225,7 @@ The latest developments in processing and the novel generations of organic compo
 
 <div class="output_subarea output_stream output_stdout output_text">
 <pre>MSE-440
-latest developments processing generations organic composites discussed Nanocomposites adaptive composites biocomposites presented Product development cost analysis study markets practiced team work Content Basics composite materialsConstituentsProcessing compositesDesign composite structures Current developmentNanocomposites Textile compositesBiocompositesAdaptive composites ApplicationsDriving forces marketsCost analysisAerospaceAutomotiveSport Keywords Composites  Applications  Nanocomposites  Biocomposites  Adaptive composites  Design  Cost Learning Prerequisites Required courses Notion polymers Recommended courses Polymer Composites Learning Outcomes end course student to Propose suitable design production performance criteria production composite partApply basic equations process mechanical properties modelling composite materialsDiscuss main types composite applications Transversal skills work methodology taskUse general domain specific IT resources toolsCommunicate effectively professionals disciplinesEvaluate ones performance team receive respond appropriately feedback Teaching methods cathedra invited speakers Group sessions exercises work project Expected student activities Attendance lectures Design composite part bibliography search Assessment methods Written exam report oral presentation class
+latest develop process gener organ composit discuss nanocomposit adapt composit biocomposit present product develop cost analysi studi market practic team work content basic composit materi constitu process composit design composit structur current develop nanocomposit textil composit biocomposit adapt composit applic drive forc market cost analysi aerospac automot sport keyword composit applic nanocomposit biocomposit adapt composit design cost learn prerequisit requir cours notion polym recommend cours polym composit learn outcom end student propos suitabl design product perform criteria product composit part appli basic equat process mechan properti model composit materi discuss main type composit applic transvers skill work methodolog task gener domain specif IT resourc tool commun effect profession disciplin evalu one perform team receiv respond appropri feedback teach method cathedra invit speaker group session exercis work project expect student activ attend lectur design composit part bibliographi search assess method written exam report oral present class
 </pre>
 </div>
 </div>
@@ -12025,7 +12244,7 @@ latest developments processing generations organic composites discussed Nanocomp
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[63]:</div>
+<div class="prompt input_prompt">In&nbsp;[129]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Make frequent words list and infrequent words list</span>
@@ -12045,7 +12264,39 @@ latest developments processing generations organic composites discussed Nanocomp
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[64]:</div>
+<div class="prompt input_prompt">In&nbsp;[137]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># See the number of unique words we have</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;num of words:&#39;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">frequency_dict</span><span class="p">))</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt"></div>
+
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>num of words: 9758
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[130]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">frequency_sorted</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">frequency_dict</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">reverse</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
@@ -12059,7 +12310,7 @@ latest developments processing generations organic composites discussed Nanocomp
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[65]:</div>
+<div class="prompt input_prompt">In&nbsp;[131]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Top 10 frequent words</span>
@@ -12076,22 +12327,22 @@ latest developments processing generations organic composites discussed Nanocomp
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[65]:</div>
+<div class="prompt output_prompt">Out[131]:</div>
 
 
 
 
 <div class="output_text output_subarea output_execute_result">
-<pre>[(&#39;methods&#39;, 1556),
- (&#39;Learning&#39;, 1237),
- (&#39;student&#39;, 1177),
- (&#39;Content&#39;, 835),
- (&#39;course&#39;, 762),
- (&#39;courses&#39;, 755),
- (&#39;end&#39;, 661),
- (&#39;students&#39;, 652),
- (&#39;systems&#39;, 621),
- (&#39;to&#39;, 602)]</pre>
+<pre>[(&#39;student&#39;, 2053),
+ (&#39;method&#39;, 1814),
+ (&#39;learn&#39;, 1633),
+ (&#39;model&#39;, 1240),
+ (&#39;system&#39;, 1201),
+ (&#39;assess&#39;, 1017),
+ (&#39;design&#39;, 991),
+ (&#39;content&#39;, 923),
+ (&#39;present&#39;, 793),
+ (&#39;process&#39;, 792)]</pre>
 </div>
 
 </div>
@@ -12102,7 +12353,7 @@ latest developments processing generations organic composites discussed Nanocomp
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[66]:</div>
+<div class="prompt input_prompt">In&nbsp;[151]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Top 10 infrequent words</span>
@@ -12119,22 +12370,22 @@ latest developments processing generations organic composites discussed Nanocomp
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[66]:</div>
+<div class="prompt output_prompt">Out[151]:</div>
 
 
 
 
 <div class="output_text output_subarea output_execute_result">
-<pre>[(&#39;biocomposites&#39;, 1),
- (&#39;materialsConstituentsProcessing&#39;, 1),
- (&#39;developmentNanocomposites&#39;, 1),
- (&#39;Textile&#39;, 1),
- (&#39;compositesBiocompositesAdaptive&#39;, 1),
- (&#39;ApplicationsDriving&#39;, 1),
- (&#39;marketsCost&#39;, 1),
- (&#39;analysisAerospaceAutomotiveSport&#39;, 1),
- (&#39;Biocomposites&#39;, 1),
- (&#39;partApply&#39;, 1)]</pre>
+<pre>[(&#39;imagej&#39;, 1),
+ (&#39;fiji&#39;, 1),
+ (&#39;1h30&#39;, 1),
+ (&#39;metadata&#39;, 1),
+ (&#39;stitch&#39;, 1),
+ (&#39;fij&#39;, 1),
+ (&#39;nontrad&#39;, 1),
+ (&#39;begiven&#39;, 1),
+ (&#39;statiqu&#39;, 1),
+ (&#39;102&#39;, 1)]</pre>
 </div>
 
 </div>
@@ -12148,17 +12399,17 @@ latest developments processing generations organic composites discussed Nanocomp
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
 <h3 id="Frequent-and-infrequent-words">Frequent and infrequent words<a class="anchor-link" href="#Frequent-and-infrequent-words">&#182;</a></h3><ul>
-<li>Frequent words, like 'methods' and 'Learning', are very general and don't effect on courses' characteristics. </li>
-<li>Also infrequent words, like 'biocomposites' and 'materialsConstituentsProcessing', are too specialized and not useful for characterising courses.</li>
+<li>Frequent words, like 'student' and 'method', are very general and don't affect the courses' characteristics. </li>
+<li>Also infrequent words, like 'imagej' and 'fiji', are too specialized and not useful for characterising courses.</li>
 </ul>
-<p>Let's remove these words. Frequent words are not so many but dominant, so remove 0.1% of frequent words and 1% of infrequent words.</p>
+<p>Let's remove these words. Frequent words are not so many but dominant, so remove 0.1% (around the top 10) of frequent words. Remove all infrequent words that appear only once.</p>
 
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[67]:</div>
+<div class="prompt input_prompt">In&nbsp;[138]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Function that extracts a certain percentage of words from a words_lst.</span>
@@ -12178,22 +12429,43 @@ latest developments processing generations organic composites discussed Nanocomp
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[68]:</div>
+<div class="prompt input_prompt">In&nbsp;[159]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Extract 0.1% of frequent words and 1% of infrequent words.</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Extract 0.1% of frequent words and all infrequent (freq=1) words.</span>
 <span class="n">frequent_words</span> <span class="o">=</span> <span class="n">extract</span><span class="p">(</span><span class="n">frequency_sorted</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">)</span>
-<span class="n">infrequent_words</span> <span class="o">=</span> <span class="n">extract</span><span class="p">(</span><span class="n">infrequency_sorted</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">infrequent_words</span> <span class="o">=</span> <span class="p">[</span><span class="n">word</span> <span class="k">for</span> <span class="n">word</span><span class="p">,</span> <span class="n">freq</span> <span class="ow">in</span> <span class="n">infrequency_sorted</span> <span class="k">if</span> <span class="n">freq</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;num of frequent words:   &quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">frequent_words</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;num of infrequent words: &quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">infrequent_words</span><span class="p">))</span>
 </pre></div>
 
 </div>
 </div>
 </div>
 
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt"></div>
+
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>num of frequent words:    10
+num of infrequent words:  4282
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[69]:</div>
+<div class="prompt input_prompt">In&nbsp;[160]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">remove</span><span class="p">(</span><span class="n">frequent_words</span><span class="p">)</span>
@@ -12206,7 +12478,7 @@ latest developments processing generations organic composites discussed Nanocomp
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[70]:</div>
+<div class="prompt input_prompt">In&nbsp;[161]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">remove</span><span class="p">(</span><span class="n">infrequent_words</span><span class="p">)</span>
@@ -12219,7 +12491,7 @@ latest developments processing generations organic composites discussed Nanocomp
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[71]:</div>
+<div class="prompt input_prompt">In&nbsp;[162]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Check the first course&#39;s description</span>
@@ -12242,68 +12514,7 @@ latest developments processing generations organic composites discussed Nanocomp
 
 <div class="output_subarea output_stream output_stdout output_text">
 <pre>MSE-440
-latest developments processing generations organic composites discussed Nanocomposites adaptive composites presented Product development cost study markets practiced team Basics composite compositesDesign composite structures Current composites forces Composites Applications Nanocomposites Adaptive composites Design Cost Required Notion polymers Recommended Polymer Composites Propose suitable production performance criteria production composite basic equations process mechanical properties modelling composite main types composite applications Transversal methodology taskUse general domain specific IT resources toolsCommunicate effectively professionals disciplinesEvaluate ones performance team receive respond appropriately feedback cathedra invited speakers Group sessions exercises Expected Attendance lectures Design composite part bibliography search Written exam report oral presentation class
-</pre>
-</div>
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="Stem-the-words-with-nltk-library.">Stem the words with nltk library.<a class="anchor-link" href="#Stem-the-words-with-nltk-library.">&#182;</a></h3>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[72]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">ps</span> <span class="o">=</span><span class="n">PS</span><span class="p">()</span>
-
-<span class="k">for</span> <span class="n">course</span> <span class="ow">in</span> <span class="n">courses</span><span class="p">:</span>
-    <span class="n">desc_lst</span> <span class="o">=</span> <span class="n">course</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">desc_lst</span><span class="p">)):</span>
-        <span class="n">desc_lst</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">ps</span><span class="o">.</span><span class="n">stem</span><span class="p">(</span><span class="n">desc_lst</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
-    <span class="n">course</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">course</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">desc_lst</span><span class="p">)</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[73]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Check the first course&#39;s description</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">courses</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;courseId&#39;</span><span class="p">])</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">courses</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;description&#39;</span><span class="p">])</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area">
-
-<div class="prompt"></div>
-
-
-<div class="output_subarea output_stream output_stdout output_text">
-<pre>MSE-440
-latest develop process gener organ composit discuss nanocomposit adapt composit present product develop cost studi market practic team basic composit compositesdesign composit structur current composit forc composit applic nanocomposit adapt composit design cost requir notion polym recommend polym composit propos suitabl product perform criteria product composit basic equat process mechan properti model composit main type composit applic transvers methodolog taskus gener domain specif IT resourc toolscommun effect profession disciplinesevalu one perform team receiv respond appropri feedback cathedra invit speaker group session exercis expect attend lectur design composit part bibliographi search written exam report oral present class
+latest develop gener organ composit discuss nanocomposit adapt composit biocomposit product develop cost analysi studi market practic team work basic composit materi constitu composit composit structur current develop nanocomposit textil composit biocomposit adapt composit applic drive forc market cost analysi aerospac automot sport keyword composit applic nanocomposit biocomposit adapt composit cost prerequisit requir cours notion polym recommend cours polym composit outcom end propos suitabl product perform criteria product composit part appli basic equat mechan properti composit materi discuss main type composit applic transvers skill work methodolog task gener domain specif IT resourc tool commun effect profession disciplin evalu one perform team receiv respond appropri feedback teach cathedra invit speaker group session exercis work project expect activ attend lectur composit part bibliographi search written exam report oral class
 </pre>
 </div>
 </div>
@@ -12319,7 +12530,7 @@ latest develop process gener organ composit discuss nanocomposit adapt composit 
 <h3 id="1.-Explain-which-ones-you-implemented-and-why.">1. Explain which ones you implemented and why.<a class="anchor-link" href="#1.-Explain-which-ones-you-implemented-and-why.">&#182;</a></h3><ul>
 <li>We implemented removing stopwords, punctuation, the very frequent words, the infrequent words, the stem words .</li>
 <li>Clearly, stopwords and punctuation are needless for characterizing courses.</li>
-<li>Also, as we mentioned in the "frequent and infrequent words part", frequent words are too general and infrequent words like 'biocomposites' and 'materialsConstituentsProcessing', are too specialized and not useful for characterising courses. Therefore we removed them.</li>
+<li>Also, as we mentioned in the "frequent and infrequent words part", frequent words are too general and infrequent words like 'imagej' and 'fiji', are too specialized and not useful for characterising courses. Therefore we removed them.</li>
 <li>For the stemming and lemmatise, they are similar ones, so I chose stemming for this project.</li>
 </ul>
 
@@ -12336,7 +12547,7 @@ latest develop process gener organ composit discuss nanocomposit adapt composit 
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[74]:</div>
+<div class="prompt input_prompt">In&nbsp;[163]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">a</span> <span class="o">=</span> <span class="mi">0</span>
@@ -12361,7 +12572,7 @@ latest develop process gener organ composit discuss nanocomposit adapt composit 
 
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>[&#39;20&#39;, &#39;30&#39;, &#39;50&#39;, &#39;acquir&#39;, &#39;ad&#39;, &#39;ad&#39;, &#39;advertis&#39;, &#39;algebra&#39;, &#39;algebra&#39;, &#39;algorithm&#39;, &#39;algorithm&#39;, &#39;analyt&#39;, &#39;analyt&#39;, &#39;apach&#39;, &#39;applic&#39;, &#39;applic&#39;, &#39;auction&#39;, &#39;auction&#39;, &#39;balanc&#39;, &#39;base&#39;, &#39;base&#39;, &#39;basic&#39;, &#39;basic&#39;, &#39;basic&#39;, &#39;cathedra&#39;, &#39;chain&#39;, &#39;class&#39;, &#39;class&#39;, &#39;class&#39;, &#39;cloud&#39;, &#39;cluster&#39;, &#39;cluster&#39;, &#39;collect&#39;, &#39;com300&#39;, &#39;combin&#39;, &#39;commun&#39;, &#39;commun&#39;, &#39;commun&#39;, &#39;comput&#39;, &#39;comput&#39;, &#39;concret&#39;, &#39;coverag&#39;, &#39;curat&#39;, &#39;current&#39;, &#39;data&#39;, &#39;data&#39;, &#39;data&#39;, &#39;data&#39;, &#39;data&#39;, &#39;data&#39;, &#39;dataset&#39;, &#39;dataset&#39;, &#39;decad&#39;, &#39;dedic&#39;, &#39;design&#39;, &#39;detect&#39;, &#39;detect&#39;, &#39;dimension&#39;, &#39;draw&#39;, &#39;ecommerc&#39;, &#39;ecommerc&#39;, &#39;effect&#39;, &#39;effici&#39;, &#39;etc&#39;, &#39;exam&#39;, &#39;expect&#39;, &#39;explor&#39;, &#39;explor&#39;, &#39;explor&#39;, &#39;explor&#39;, &#39;explor&#39;, &#39;field&#39;, &#39;final&#39;, &#39;foundat&#39;, &#39;framework&#39;, &#39;function&#39;, &#39;fundament&#39;, &#39;good&#39;, &#39;graph&#39;, &#39;graph&#39;, &#39;hadoop&#39;, &#39;hadoop&#39;, &#39;handson&#39;, &#39;homework&#39;, &#39;homework&#39;, &#39;import&#39;, &#39;inform&#39;, &#39;inform&#39;, &#39;infrastructur&#39;, &#39;inspir&#39;, &#39;internet&#39;, &#39;internet&#39;, &#39;java&#39;, &#39;key&#39;, &#39;knowledg&#39;, &#39;lab&#39;, &#39;lab&#39;, &#39;lab&#39;, &#39;laboratori&#39;, &#39;largescal&#39;, &#39;largescal&#39;, &#39;largescal&#39;, &#39;learn&#39;, &#39;learn&#39;, &#39;lectur&#39;, &#39;lectur&#39;, &#39;linear&#39;, &#39;linear&#39;, &#39;machin&#39;, &#39;machin&#39;, &#39;main&#39;, &#39;mapreduc&#39;, &#39;markov&#39;, &#39;materi&#39;, &#39;materi&#39;, &#39;media&#39;, &#39;midterm&#39;, &#39;mine&#39;, &#39;mine&#39;, &#39;mine&#39;, &#39;model&#39;, &#39;model&#39;, &#39;model&#39;, &#39;model&#39;, &#39;model&#39;, &#39;model&#39;, &#39;modelsdatamin&#39;, &#39;network&#39;, &#39;network&#39;, &#39;network&#39;, &#39;network&#39;, &#39;number&#39;, &#39;number&#39;, &#39;onlin&#39;, &#39;onlin&#39;, &#39;onlin&#39;, &#39;onlin&#39;, &#39;onlin&#39;, &#39;past&#39;, &#39;practic&#39;, &#39;practic&#39;, &#39;problem&#39;, &#39;problem&#39;, &#39;project&#39;, &#39;provid&#39;, &#39;question&#39;, &#39;real&#39;, &#39;realworld&#39;, &#39;realworld&#39;, &#39;realworld&#39;, &#39;realworld&#39;, &#39;recommend&#39;, &#39;recommend&#39;, &#39;recommend&#39;, &#39;reduct&#39;, &#39;relat&#39;, &#39;requir&#39;, &#39;retriev&#39;, &#39;search&#39;, &#39;searchretrievaltop&#39;, &#39;seek&#39;, &#39;selfcontain&#39;, &#39;servic&#39;, &#39;servic&#39;, &#39;servic&#39;, &#39;servicesanalyz&#39;, &#39;servicesdevelop&#39;, &#39;session&#39;, &#39;session&#39;, &#39;social&#39;, &#39;social&#39;, &#39;social&#39;, &#39;social&#39;, &#39;social&#39;, &#39;spark&#39;, &#39;specif&#39;, &#39;start&#39;, &#39;statist&#39;, &#39;stochast&#39;, &#39;stream&#39;, &#39;stream&#39;, &#39;structur&#39;, &#39;techniqu&#39;, &#39;theoret&#39;, &#39;theori&#39;, &#39;thi&#39;, &#39;togeth&#39;, &#39;topic&#39;, &#39;typic&#39;, &#39;ubiquit&#39;, &#39;user&#39;, &#39;weekli&#39;, &#39;world&#39;]
+<pre>[&#39;20&#39;, &#39;30&#39;, &#39;300&#39;, &#39;50&#39;, &#39;CO&#39;, &#39;acquir&#39;, &#39;activ&#39;, &#39;ad&#39;, &#39;ad&#39;, &#39;advertis&#39;, &#39;algebra&#39;, &#39;algebra&#39;, &#39;algorithm&#39;, &#39;algorithm&#39;, &#39;analysi&#39;, &#39;analyt&#39;, &#39;analyt&#39;, &#39;analyz&#39;, &#39;applic&#39;, &#39;applic&#39;, &#39;auction&#39;, &#39;auction&#39;, &#39;balanc&#39;, &#39;base&#39;, &#39;base&#39;, &#39;basic&#39;, &#39;basic&#39;, &#39;basic&#39;, &#39;cathedra&#39;, &#39;chain&#39;, &#39;class&#39;, &#39;class&#39;, &#39;class&#39;, &#39;cloud&#39;, &#39;cluster&#39;, &#39;cluster&#39;, &#39;collect&#39;, &#39;combin&#39;, &#39;commerc&#39;, &#39;commerc&#39;, &#39;commun&#39;, &#39;commun&#39;, &#39;commun&#39;, &#39;comput&#39;, &#39;comput&#39;, &#39;concept&#39;, &#39;concept&#39;, &#39;concret&#39;, &#39;contain&#39;, &#39;cours&#39;, &#39;cours&#39;, &#39;coverag&#39;, &#39;current&#39;, &#39;data&#39;, &#39;data&#39;, &#39;data&#39;, &#39;data&#39;, &#39;data&#39;, &#39;data&#39;, &#39;dataset&#39;, &#39;dataset&#39;, &#39;decad&#39;, &#39;dedic&#39;, &#39;detect&#39;, &#39;detect&#39;, &#39;develop&#39;, &#39;dimension&#39;, &#39;draw&#39;, &#39;effect&#39;, &#39;effici&#39;, &#39;end&#39;, &#39;exam&#39;, &#39;expect&#39;, &#39;explor&#39;, &#39;explor&#39;, &#39;explor&#39;, &#39;explor&#39;, &#39;explor&#39;, &#39;field&#39;, &#39;final&#39;, &#39;foundat&#39;, &#39;framework&#39;, &#39;function&#39;, &#39;fundament&#39;, &#39;good&#39;, &#39;graph&#39;, &#39;graph&#39;, &#39;hadoop&#39;, &#39;hadoop&#39;, &#39;hand&#39;, &#39;homework&#39;, &#39;homework&#39;, &#39;import&#39;, &#39;inform&#39;, &#39;inform&#39;, &#39;infrastructur&#39;, &#39;inspir&#39;, &#39;internet&#39;, &#39;internet&#39;, &#39;java&#39;, &#39;key&#39;, &#39;keyword&#39;, &#39;knowledg&#39;, &#39;lab&#39;, &#39;lab&#39;, &#39;lab&#39;, &#39;laboratori&#39;, &#39;larg&#39;, &#39;larg&#39;, &#39;larg&#39;, &#39;lectur&#39;, &#39;lectur&#39;, &#39;linear&#39;, &#39;linear&#39;, &#39;machin&#39;, &#39;machin&#39;, &#39;main&#39;, &#39;map&#39;, &#39;markov&#39;, &#39;materi&#39;, &#39;materi&#39;, &#39;media&#39;, &#39;midterm&#39;, &#39;mine&#39;, &#39;mine&#39;, &#39;mine&#39;, &#39;mine&#39;, &#39;network&#39;, &#39;network&#39;, &#39;network&#39;, &#39;network&#39;, &#39;number&#39;, &#39;number&#39;, &#39;onlin&#39;, &#39;onlin&#39;, &#39;onlin&#39;, &#39;onlin&#39;, &#39;onlin&#39;, &#39;outcom&#39;, &#39;past&#39;, &#39;practic&#39;, &#39;practic&#39;, &#39;prerequisit&#39;, &#39;problem&#39;, &#39;problem&#39;, &#39;project&#39;, &#39;provid&#39;, &#39;question&#39;, &#39;real&#39;, &#39;real&#39;, &#39;real&#39;, &#39;real&#39;, &#39;real&#39;, &#39;recommend&#39;, &#39;recommend&#39;, &#39;recommend&#39;, &#39;reduc&#39;, &#39;reduct&#39;, &#39;relat&#39;, &#39;requir&#39;, &#39;retriev&#39;, &#39;retriev&#39;, &#39;scale&#39;, &#39;scale&#39;, &#39;scale&#39;, &#39;search&#39;, &#39;search&#39;, &#39;seek&#39;, &#39;servic&#39;, &#39;servic&#39;, &#39;servic&#39;, &#39;servic&#39;, &#39;servic&#39;, &#39;session&#39;, &#39;session&#39;, &#39;social&#39;, &#39;social&#39;, &#39;social&#39;, &#39;social&#39;, &#39;social&#39;, &#39;spark&#39;, &#39;specif&#39;, &#39;start&#39;, &#39;statist&#39;, &#39;stochast&#39;, &#39;stream&#39;, &#39;stream&#39;, &#39;structur&#39;, &#39;teach&#39;, &#39;techniqu&#39;, &#39;theoret&#39;, &#39;theori&#39;, &#39;topic&#39;, &#39;topic&#39;, &#39;typic&#39;, &#39;ubiquit&#39;, &#39;user&#39;, &#39;weekli&#39;, &#39;work&#39;, &#39;world&#39;, &#39;world&#39;, &#39;world&#39;, &#39;world&#39;, &#39;world&#39;]
 </pre>
 </div>
 </div>
@@ -12383,7 +12594,7 @@ latest develop process gener organ composit discuss nanocomposit adapt composit 
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[75]:</div>
+<div class="prompt input_prompt">In&nbsp;[164]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Make a set that contains all the words in the courses.</span>
@@ -12409,7 +12620,7 @@ latest develop process gener organ composit discuss nanocomposit adapt composit 
 
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>The number of all words used in the courses&#39; descriptions is 14513.
+<pre>The number of all words used in the courses&#39; descriptions is 5466.
 </pre>
 </div>
 </div>
@@ -12420,7 +12631,7 @@ latest develop process gener organ composit discuss nanocomposit adapt composit 
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[76]:</div>
+<div class="prompt input_prompt">In&nbsp;[165]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Construct the TF matrix</span>
@@ -12438,13 +12649,13 @@ latest develop process gener organ composit discuss nanocomposit adapt composit 
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[76]:</div>
+<div class="prompt output_prompt">Out[165]:</div>
 
 
 
 
 <div class="output_text output_subarea output_execute_result">
-<pre>(14513, 854)</pre>
+<pre>(5466, 854)</pre>
 </div>
 
 </div>
@@ -12455,7 +12666,7 @@ latest develop process gener organ composit discuss nanocomposit adapt composit 
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[77]:</div>
+<div class="prompt input_prompt">In&nbsp;[166]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Make indices for column (courseIds) and row (words).</span>
@@ -12470,7 +12681,7 @@ latest develop process gener organ composit discuss nanocomposit adapt composit 
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[78]:</div>
+<div class="prompt input_prompt">In&nbsp;[167]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">word</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">row_indices</span><span class="p">):</span>
@@ -12487,7 +12698,7 @@ latest develop process gener organ composit discuss nanocomposit adapt composit 
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[79]:</div>
+<div class="prompt input_prompt">In&nbsp;[168]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">IDF</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">all_set</span><span class="p">))</span>
@@ -12500,7 +12711,7 @@ latest develop process gener organ composit discuss nanocomposit adapt composit 
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[80]:</div>
+<div class="prompt input_prompt">In&nbsp;[169]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Construct the IDF</span>
@@ -12516,7 +12727,7 @@ latest develop process gener organ composit discuss nanocomposit adapt composit 
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[81]:</div>
+<div class="prompt input_prompt">In&nbsp;[170]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">IDF</span> <span class="o">=</span> <span class="n">IDF</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">IDF</span><span class="p">),</span><span class="mi">1</span><span class="p">)</span>
@@ -12529,7 +12740,7 @@ latest develop process gener organ composit discuss nanocomposit adapt composit 
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[82]:</div>
+<div class="prompt input_prompt">In&nbsp;[171]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">IDF</span>
@@ -12545,19 +12756,19 @@ latest develop process gener organ composit discuss nanocomposit adapt composit 
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[82]:</div>
+<div class="prompt output_prompt">Out[171]:</div>
 
 
 
 
 <div class="output_text output_subarea output_execute_result">
-<pre>array([[ 6.74993119],
-       [ 2.9212898 ],
-       [ 6.74993119],
+<pre>array([[ 2.89978359],
+       [ 0.98787981],
+       [ 3.38263536],
        ..., 
+       [ 5.65131891],
        [ 6.74993119],
-       [ 6.05678401],
-       [ 6.74993119]])</pre>
+       [ 6.05678401]])</pre>
 </div>
 
 </div>
@@ -12568,7 +12779,7 @@ latest develop process gener organ composit discuss nanocomposit adapt composit 
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[83]:</div>
+<div class="prompt input_prompt">In&nbsp;[172]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Construct the TFIDF_matrix</span>
@@ -12582,7 +12793,7 @@ latest develop process gener organ composit discuss nanocomposit adapt composit 
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[84]:</div>
+<div class="prompt input_prompt">In&nbsp;[173]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">TFIDF_matrix</span><span class="o">.</span><span class="n">shape</span>
@@ -12598,13 +12809,13 @@ latest develop process gener organ composit discuss nanocomposit adapt composit 
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[84]:</div>
+<div class="prompt output_prompt">Out[173]:</div>
 
 
 
 
 <div class="output_text output_subarea output_execute_result">
-<pre>(14513, 854)</pre>
+<pre>(5466, 854)</pre>
 </div>
 
 </div>
@@ -12615,7 +12826,7 @@ latest develop process gener organ composit discuss nanocomposit adapt composit 
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[85]:</div>
+<div class="prompt input_prompt">In&nbsp;[174]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">TFIDF_matrix</span>
@@ -12631,19 +12842,25 @@ latest develop process gener organ composit discuss nanocomposit adapt composit 
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[85]:</div>
+<div class="prompt output_prompt">Out[174]:</div>
 
 
 
 
 <div class="output_text output_subarea output_execute_result">
-<pre>array([[ 0.,  0.,  0., ...,  0.,  0.,  0.],
-       [ 0.,  0.,  0., ...,  0.,  0.,  0.],
-       [ 0.,  0.,  0., ...,  0.,  0.,  0.],
+<pre>array([[ 0.        ,  0.        ,  0.        , ...,  0.        ,
+         0.        ,  0.        ],
+       [ 0.01555716,  0.01829407,  0.        , ...,  0.        ,
+         0.03186709,  0.03951519],
+       [ 0.        ,  0.        ,  0.        , ...,  0.        ,
+         0.        ,  0.        ],
        ..., 
-       [ 0.,  0.,  0., ...,  0.,  0.,  0.],
-       [ 0.,  0.,  0., ...,  0.,  0.,  0.],
-       [ 0.,  0.,  0., ...,  0.,  0.,  0.]])</pre>
+       [ 0.        ,  0.        ,  0.        , ...,  0.        ,
+         0.        ,  0.        ],
+       [ 0.        ,  0.        ,  0.        , ...,  0.        ,
+         0.        ,  0.        ],
+       [ 0.        ,  0.        ,  0.        , ...,  0.        ,
+         0.        ,  0.        ]])</pre>
 </div>
 
 </div>
@@ -12654,7 +12871,7 @@ latest develop process gener organ composit discuss nanocomposit adapt composit 
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[86]:</div>
+<div class="prompt input_prompt">In&nbsp;[175]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">save_pkl</span><span class="p">(</span><span class="n">TFIDF_matrix</span><span class="p">,</span> <span class="s1">&#39;tfidx_matrix.pkl&#39;</span><span class="p">)</span>
@@ -12669,7 +12886,7 @@ latest develop process gener organ composit discuss nanocomposit adapt composit 
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[87]:</div>
+<div class="prompt input_prompt">In&nbsp;[176]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Take the TFIDF values of  &#39;COM-308&#39;</span>
@@ -12684,7 +12901,7 @@ latest develop process gener organ composit discuss nanocomposit adapt composit 
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[88]:</div>
+<div class="prompt input_prompt">In&nbsp;[177]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">ix_TFIDF_vals</span> <span class="o">=</span> <span class="p">{}</span>
@@ -12709,7 +12926,7 @@ latest develop process gener organ composit discuss nanocomposit adapt composit 
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[89]:</div>
+<div class="prompt input_prompt">In&nbsp;[178]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Show the 15 terms in the description of the IX class with the highest TF-IDF scores.</span>
@@ -12727,27 +12944,27 @@ latest develop process gener organ composit discuss nanocomposit adapt composit 
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[89]:</div>
+<div class="prompt output_prompt">Out[178]:</div>
 
 
 
 
 <div class="output_text output_subarea output_execute_result">
-<pre>[(&#39;onlin&#39;, 0.088542142062522422),
- (&#39;realworld&#39;, 0.088394291067369318),
- (&#39;social&#39;, 0.082031405578561131),
- (&#39;explor&#39;, 0.078662153551405739),
- (&#39;mine&#39;, 0.072598284747804151),
- (&#39;hadoop&#39;, 0.062764601173353626),
- (&#39;largescal&#39;, 0.06182397624169101),
- (&#39;ecommerc&#39;, 0.05856289020850218),
- (&#39;servic&#39;, 0.056182958205068703),
- (&#39;auction&#39;, 0.055581728835944866),
- (&#39;internet&#39;, 0.05138001787109342),
- (&#39;network&#39;, 0.048563978166307087),
- (&#39;data&#39;, 0.047383974717368979),
- (&#39;dataset&#39;, 0.045098817834095334),
- (&#39;ad&#39;, 0.043367687423078061)]</pre>
+<pre>[(&#39;mine&#39;, 0.091578228472720277),
+ (&#39;servic&#39;, 0.087546013809819231),
+ (&#39;onlin&#39;, 0.084659174700594128),
+ (&#39;social&#39;, 0.076936600028047683),
+ (&#39;world&#39;, 0.070557112325506835),
+ (&#39;explor&#39;, 0.069556573244128034),
+ (&#39;hadoop&#39;, 0.059380235423810046),
+ (&#39;real&#39;, 0.055980957723872203),
+ (&#39;auction&#39;, 0.052584674830085089),
+ (&#39;commerc&#39;, 0.052584674830085089),
+ (&#39;retriev&#39;, 0.047098245536600553),
+ (&#39;internet&#39;, 0.045789114236360139),
+ (&#39;network&#39;, 0.045240783084279479),
+ (&#39;dataset&#39;, 0.041029233689480714),
+ (&#39;stream&#39;, 0.039626284242023135)]</pre>
 </div>
 
 </div>
@@ -12777,7 +12994,7 @@ latest develop process gener organ composit discuss nanocomposit adapt composit 
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[90]:</div>
+<div class="prompt input_prompt">In&nbsp;[179]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Construct query vectors for markov chain and facebook</span>
@@ -12796,7 +13013,7 @@ latest develop process gener organ composit discuss nanocomposit adapt composit 
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[91]:</div>
+<div class="prompt input_prompt">In&nbsp;[180]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Function that calculates the cosine similarity of  2 documents</span>
@@ -12811,7 +13028,7 @@ latest develop process gener organ composit discuss nanocomposit adapt composit 
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[92]:</div>
+<div class="prompt input_prompt">In&nbsp;[181]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">markov_similarity</span> <span class="o">=</span> <span class="p">[]</span>
@@ -12826,7 +13043,7 @@ latest develop process gener organ composit discuss nanocomposit adapt composit 
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[93]:</div>
+<div class="prompt input_prompt">In&nbsp;[182]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Make a dictionary of (course name: similarity value)</span>
@@ -12845,7 +13062,7 @@ latest develop process gener organ composit discuss nanocomposit adapt composit 
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[95]:</div>
+<div class="prompt input_prompt">In&nbsp;[183]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">facebook_similarity</span> <span class="o">=</span> <span class="p">[]</span>
@@ -12860,7 +13077,7 @@ latest develop process gener organ composit discuss nanocomposit adapt composit 
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[96]:</div>
+<div class="prompt input_prompt">In&nbsp;[184]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Make a dictionary of (course name: similarity value)</span>
@@ -12887,7 +13104,7 @@ latest develop process gener organ composit discuss nanocomposit adapt composit 
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[98]:</div>
+<div class="prompt input_prompt">In&nbsp;[185]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Print the top 5 courses</span>
@@ -12911,11 +13128,11 @@ latest develop process gener organ composit discuss nanocomposit adapt composit 
 
 <div class="output_subarea output_stream output_stdout output_text">
 <pre>The top five courses together with their similarity score for query markov chain
-(&#39;Applied stochastic processes&#39;, 0.55381084208926346)
-(&#39;Applied probability &amp; stochastic processes&#39;, 0.54293465222562776)
-(&#39;Markov chains and algorithmic applications&#39;, 0.38715760245681952)
-(&#39;Supply chain management&#39;, 0.36275654756075915)
-(&#39;Mathematical models in supply chain management&#39;, 0.2989216694626754)
+(&#39;Applied stochastic processes&#39;, 0.58755084846323447)
+(&#39;Applied probability &amp; stochastic processes&#39;, 0.53961015057965878)
+(&#39;Markov chains and algorithmic applications&#39;, 0.45636978045262666)
+(&#39;Supply chain management&#39;, 0.3903593823655549)
+(&#39;Mathematical models in supply chain management&#39;, 0.31751041450037115)
 </pre>
 </div>
 </div>
@@ -12926,7 +13143,7 @@ latest develop process gener organ composit discuss nanocomposit adapt composit 
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[97]:</div>
+<div class="prompt input_prompt">In&nbsp;[186]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Print the top 5 courses</span>
@@ -12950,7 +13167,7 @@ latest develop process gener organ composit discuss nanocomposit adapt composit 
 
 <div class="output_subarea output_stream output_stdout output_text">
 <pre>The top five courses together with their similarity score for query facebook
-(&#39;Computational Social Media&#39;, 0.1762569139361605)
+(&#39;Computational Social Media&#39;, 0.18591143220755649)
 (&#39;Composites technology&#39;, 0.0)
 (&#39;Image Processing for Life Science&#39;, 0.0)
 (&#39;Global business environment&#39;, 0.0)
@@ -12973,7 +13190,7 @@ latest develop process gener organ composit discuss nanocomposit adapt composit 
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[100]:</div>
+<div class="prompt input_prompt">In&nbsp;[187]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">count_markov</span> <span class="o">=</span> <span class="mi">0</span>
@@ -12996,7 +13213,7 @@ latest develop process gener organ composit discuss nanocomposit adapt composit 
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[105]:</div>
+<div class="prompt input_prompt">In&nbsp;[188]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;The number of markov in descriptions is </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">count_markov</span><span class="p">))</span>
@@ -13018,8 +13235,8 @@ latest develop process gener organ composit discuss nanocomposit adapt composit 
 
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>The number of markov in descriptions is 42
-The number of chain in descriptions is 68
+<pre>The number of markov in descriptions is 45
+The number of chain in descriptions is 79
 The number of facebook in descriptions is 3
 </pre>
 </div>

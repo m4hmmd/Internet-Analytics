@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8" />
-<title>lab4-1-vsm</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
+<title>lab4-3-lda-11-wikipedia</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
 
 <style type="text/css">
@@ -11775,7 +11775,7 @@ div#notebook {
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h1 id="Text-1:-Vector-space-models">Text 1: Vector space models<a class="anchor-link" href="#Text-1:-Vector-space-models">&#182;</a></h1><p><strong>Internet Analytics - Lab 4</strong></p>
+<h1 id="Text-3:-Latent-Dirichlet-allocation">Text 3: Latent Dirichlet allocation<a class="anchor-link" href="#Text-3:-Latent-Dirichlet-allocation">&#182;</a></h1><p><strong>Internet Analytics - Lab 4</strong></p>
 <hr>
 <p><strong>Group:</strong> <em>B</em></p>
 <p><strong>Names:</strong></p>
@@ -11784,74 +11784,73 @@ div#notebook {
 <li><em>Mahammad Shirinov</em></li>
 <li><em>Stephen Zhao</em></li>
 </ul>
-<hr>
-<h4 id="Instructions">Instructions<a class="anchor-link" href="#Instructions">&#182;</a></h4><p><em>This is a template for part 1 of the lab. Clearly write your answers, comments and interpretations in Markodown cells. Don't forget that you can add $\LaTeX$ equations in these cells. Feel free to add or remove any cell.</em></p>
-<p><em>Please properly comment your code. Code readability will be considered for grading. To avoid long cells of codes in the notebook, you can also embed long python functions and classes in a separate module. Don’t forget to hand in your module if that is the case. In multiple exercises, you are required to come up with your own method to solve various problems. Be creative and clearly motivate and explain your methods. Creativity and clarity will be considered for grading.</em></p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Exercise-4.11:-Wikipedia-structure">Exercise 4.11: Wikipedia structure<a class="anchor-link" href="#Exercise-4.11:-Wikipedia-structure">&#182;</a></h2>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>The time to train LDA on the entire Wikipedia dataset was prohibitive (only one iteration was completed after 6 hours of running, with uninteresting results). This was probably due to the immense vocabulary asize of the data (~500K), which defines the size of the input vectors, slowing down the fitting process drastically. In this notebook, we reduced the dictionary size and removed very infrequent words (as well as a few very frequent ones) and fitted LDA on the resulting dataset. The results are quite impressive.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h3 id="1.-Report-the-values-for-k,-&#945;-and-&#946;-that-you-chose-a-priori-and-why-you-picked-them.">1. Report the values for k, &#945; and &#946; that you chose a priori and why you picked them.<a class="anchor-link" href="#1.-Report-the-values-for-k,-&#945;-and-&#946;-that-you-chose-a-priori-and-why-you-picked-them.">&#182;</a></h3>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Before any testing, here is our intuition. Wikipedia for Schools would probably have 20 to 30 topics covered, which would include the subjects in an average school curriculum with additional topics such as Art or Movies/Entertainment(?). Having in mind that these articles will probably be longer and more general than epfl course desciptions, we  might use a larger $\alpha$ value here (a doc likely to touch a lot of topics). In case of terms, since the content is designed for schools, there would probably be less jargon in articles, and most articles would use most of the common words in english. Thus, we can use a larger $\beta$ value (eccentric words less likely). <br/>
+We will go with $k=20$, $\alpha=6.0$ and $\beta=1.4$</p>
 
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[1]:</div>
+<div class="prompt input_prompt">In&nbsp;[45]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">pickle</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">pyspark.mllib.clustering</span> <span class="k">import</span> <span class="n">LDA</span><span class="p">,</span> <span class="n">LDAModel</span>
+<span class="kn">from</span> <span class="nn">pyspark.mllib.linalg</span> <span class="k">import</span> <span class="n">Vectors</span>
+<span class="kn">import</span> <span class="nn">pickle</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">copy</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">scipy.sparse</span> <span class="k">import</span> <span class="n">csr_matrix</span>
 <span class="kn">from</span> <span class="nn">utils</span> <span class="k">import</span> <span class="n">load_json</span><span class="p">,</span> <span class="n">load_pkl</span><span class="p">,</span> <span class="n">save_pkl</span>
-<span class="kn">import</span> <span class="nn">string</span>
-<span class="kn">import</span> <span class="nn">re</span>
-<span class="kn">from</span> <span class="nn">nltk.stem</span> <span class="k">import</span> <span class="n">PorterStemmer</span> <span class="k">as</span> <span class="n">PS</span>
-<span class="kn">import</span> <span class="nn">math</span>
-<span class="kn">from</span> <span class="nn">numpy</span> <span class="k">import</span> <span class="n">linalg</span> <span class="k">as</span> <span class="n">LA</span>
-
-<span class="n">courses</span> <span class="o">=</span> <span class="n">load_json</span><span class="p">(</span><span class="s1">&#39;data/courses.txt&#39;</span><span class="p">)</span>
-<span class="n">stopwords</span> <span class="o">=</span> <span class="n">load_pkl</span><span class="p">(</span><span class="s1">&#39;data/stopwords.pkl&#39;</span><span class="p">)</span>
-<span class="n">courses_original</span> <span class="o">=</span> <span class="n">load_json</span><span class="p">(</span><span class="s1">&#39;data/courses.txt&#39;</span><span class="p">)</span>
 </pre></div>
 
 </div>
 </div>
 </div>
 
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Exercise-4.1:-Pre-processing">Exercise 4.1: Pre-processing<a class="anchor-link" href="#Exercise-4.1:-Pre-processing">&#182;</a></h2>
-</div>
-</div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 <div class="prompt input_prompt">In&nbsp;[2]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Check the number of courses</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;The number of courses is </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">courses</span><span class="p">)))</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">wikipedia</span> <span class="o">=</span> <span class="n">sc</span><span class="o">.</span><span class="n">textFile</span><span class="p">(</span><span class="s1">&#39;/ix/wikipedia-for-schools.txt&#39;</span><span class="p">)</span>
 </pre></div>
 
 </div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area">
-
-<div class="prompt"></div>
-
-
-<div class="output_subarea output_stream output_stdout output_text">
-<pre>The number of courses is 854.
-</pre>
-</div>
-</div>
-
 </div>
 </div>
 
@@ -11861,9 +11860,8 @@ div#notebook {
 <div class="prompt input_prompt">In&nbsp;[3]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Check the first course&#39;s description without pre-processing</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">courses</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;courseId&#39;</span><span class="p">])</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">courses</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;description&#39;</span><span class="p">])</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">c</span> <span class="o">=</span> <span class="n">wikipedia</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">a</span><span class="o">+</span><span class="n">b</span><span class="p">)</span>
+<span class="n">c</span>
 </pre></div>
 
 </div>
@@ -11876,139 +11874,80 @@ div#notebook {
 
 <div class="output_area">
 
-<div class="prompt"></div>
+<div class="prompt output_prompt">Out[3]:</div>
 
 
-<div class="output_subarea output_stream output_stdout output_text">
-<pre>MSE-440
-The latest developments in processing and the novel generations of organic composites are discussed. Nanocomposites, adaptive composites and biocomposites are presented. Product development, cost analysis and study of new markets are practiced in team work. Content Basics of composite materialsConstituentsProcessing of compositesDesign of composite structures Current developmentNanocomposites Textile compositesBiocompositesAdaptive composites ApplicationsDriving forces and marketsCost analysisAerospaceAutomotiveSport Keywords Composites - Applications - Nanocomposites - Biocomposites - Adaptive composites - Design - Cost Learning Prerequisites Required courses Notion of polymers Recommended courses Polymer Composites Learning Outcomes By the end of the course, the student must be able to: Propose suitable design, production and performance criteria for the production of a composite partApply the basic equations for process and mechanical properties modelling for composite materialsDiscuss the main types of composite applications Transversal skills Use a work methodology appropriate to the task.Use both general and domain specific IT resources and toolsCommunicate effectively with professionals from other disciplines.Evaluate one&#39;s own performance in the team, receive and respond appropriately to feedback. Teaching methods Ex cathedra and invited speakers Group sessions with exercises or work on the project Expected student activities Attendance at lectures Design of a composite part, bibliography search   Assessment methods Written exam report and oral presentation in class
-</pre>
-</div>
-</div>
 
-</div>
+
+<div class="output_text output_subarea output_execute_result">
+<pre>5554</pre>
 </div>
 
 </div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="Split-camel-case-words">Split camel case words<a class="anchor-link" href="#Split-camel-case-words">&#182;</a></h3>
+
 </div>
 </div>
+
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[4]:</div>
+<div class="prompt input_prompt">In&nbsp;[112]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">CAPITAL_LETTERS</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">chr</span><span class="p">(</span><span class="nb">ord</span><span class="p">(</span><span class="s1">&#39;A&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">26</span><span class="p">))</span>
-
-<span class="k">for</span> <span class="n">course</span> <span class="ow">in</span> <span class="n">courses</span><span class="p">:</span>
-    <span class="n">desc_lst</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">course</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">():</span>
-        <span class="c1"># Split up camelcase words like &quot;materialsConstituentsProcessing&quot; </span>
-        <span class="c1"># that were not parsed correctly and ended up as camel case.</span>
-        <span class="c1"># But do not split up acronyms like &quot;IT&quot;</span>
-        <span class="n">words</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="n">words</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># given a trained model and the dictionary used in its dataset, </span>
+<span class="c1"># prints the most relevant terms for each topic classified by the model</span>
+<span class="k">def</span> <span class="nf">describe_topics</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">terms</span><span class="p">,</span> <span class="n">n_words_per_topic</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">topic_labels</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="c1"># get the predictions of topic term distributions from the LDAmodel</span>
+    <span class="n">lda_topic_predictions</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">describeTopics</span><span class="p">(</span><span class="n">maxTermsPerTopic</span><span class="o">=</span><span class="n">n_words_per_topic</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">topic</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">lda_topic_predictions</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">topic_labels</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;== Topic </span><span class="si">{}</span><span class="s1"> - </span><span class="si">{}</span><span class="s1"> ==&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">topic_labels</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)):</span>
-                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="c1"># Start the first word</span>
-                    <span class="n">start</span> <span class="o">=</span> <span class="mi">0</span>
-                <span class="k">elif</span> <span class="n">i</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span> <span class="c1"># Add the final word</span>
-                    <span class="n">words</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">word</span><span class="p">[</span><span class="n">start</span><span class="p">:])</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">is_prev_capital</span> <span class="o">=</span> <span class="n">word</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="n">CAPITAL_LETTERS</span>
-                    <span class="n">is_curr_capital</span> <span class="o">=</span> <span class="n">word</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="ow">in</span> <span class="n">CAPITAL_LETTERS</span>
-                    <span class="n">is_next_capital</span> <span class="o">=</span> <span class="n">word</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="n">CAPITAL_LETTERS</span>
-                    <span class="k">if</span> <span class="n">is_curr_capital</span><span class="p">:</span>
-                        <span class="k">if</span> <span class="n">is_prev_capital</span><span class="p">:</span>
-                            <span class="k">if</span> <span class="n">is_next_capital</span><span class="p">:</span>
-                                <span class="c1"># part of acronym</span>
-                                <span class="k">continue</span>
-                            <span class="k">else</span><span class="p">:</span>
-                                <span class="c1"># end of acronym and beginning of new word</span>
-                                <span class="n">words</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">word</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">i</span><span class="p">])</span>
-                                <span class="n">start</span> <span class="o">=</span> <span class="n">i</span>
-                        <span class="k">else</span><span class="p">:</span>
-                            <span class="c1"># start of new word or acronym</span>
-                            <span class="n">start</span> <span class="o">=</span> <span class="n">i</span>
-                    <span class="k">else</span><span class="p">:</span>
-                        <span class="k">if</span> <span class="n">is_next_capital</span><span class="p">:</span>
-                            <span class="c1"># end of a word or acronym</span>
-                            <span class="n">words</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">word</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
-                        <span class="k">else</span><span class="p">:</span>
-                            <span class="c1"># part of a word</span>
-                            <span class="k">continue</span>       
-                        <span class="c1">#endif</span>
-                    <span class="c1">#endif</span>
-                <span class="c1">#endif</span>
-            <span class="c1">#endfor</span>
-        <span class="c1">#endif</span>
-        <span class="n">desc_lst</span> <span class="o">+=</span> <span class="n">words</span>
-    <span class="n">course</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">desc_lst</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;== Topic </span><span class="si">{}</span><span class="s1"> ==&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+        <span class="n">most_relevant_terms</span> <span class="o">=</span> <span class="n">topic</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">most_relevant_terms_relevance</span> <span class="o">=</span> <span class="n">topic</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{:&gt;12}</span><span class="s1"> | </span><span class="si">{:10}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s1">&#39;Term&#39;</span><span class="p">,</span> <span class="s1">&#39;Score&#39;</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">term</span><span class="p">,</span> <span class="n">relevance</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">most_relevant_terms</span><span class="p">,</span> <span class="n">most_relevant_terms_relevance</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{:&gt;12}</span><span class="s1"> | </span><span class="si">{:10}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">terms</span><span class="p">[</span><span class="n">term</span><span class="p">],</span> <span class="n">relevance</span><span class="p">))</span>
+
+<span class="c1"># given a wikipedia article as a json string (json dump), returns its list of tokens</span>
+<span class="k">def</span> <span class="nf">extract_tokens</span><span class="p">(</span><span class="n">json_dump</span><span class="p">):</span>
+    <span class="n">article</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">json_dump</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">article</span><span class="p">[</span><span class="s1">&#39;tokens&#39;</span><span class="p">]</span>
+
+<span class="c1"># given an array of tokens, returns the frequency dict of the tokens</span>
+<span class="k">def</span> <span class="nf">to_freq_dict</span><span class="p">(</span><span class="n">tokens_array</span><span class="p">):</span>
+    <span class="n">freq</span> <span class="o">=</span> <span class="p">{}</span> 
+    <span class="k">for</span> <span class="n">term</span> <span class="ow">in</span> <span class="n">tokens_array</span><span class="p">:</span> 
+        <span class="k">if</span> <span class="p">(</span><span class="n">term</span> <span class="ow">in</span> <span class="n">freq</span><span class="p">):</span> 
+            <span class="n">freq</span><span class="p">[</span><span class="n">term</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span> 
+            <span class="n">freq</span><span class="p">[</span><span class="n">term</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">freq</span>
+
+<span class="c1"># given two frequency dicts (containing keys and their frequencies), returns their &#39;union&#39;</span>
+<span class="k">def</span> <span class="nf">freq_dict_union</span><span class="p">(</span><span class="n">d1</span><span class="p">,</span> <span class="n">d2</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">d1</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">d2</span><span class="p">:</span>
+            <span class="n">d2</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">+=</span> <span class="n">d1</span><span class="p">[</span><span class="n">x</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">d2</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">=</span> <span class="n">d1</span><span class="p">[</span><span class="n">x</span><span class="p">]</span>
+            
+    <span class="k">return</span> <span class="n">d2</span>
 </pre></div>
 
 </div>
 </div>
 </div>
 
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[5]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Check the first course&#39;s description after camel case splitting</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">courses</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;courseId&#39;</span><span class="p">])</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">courses</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;description&#39;</span><span class="p">])</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area">
-
-<div class="prompt"></div>
-
-
-<div class="output_subarea output_stream output_stdout output_text">
-<pre>MSE-440
-The latest developments in processing and the novel generations of organic composites are discussed. Nanocomposites, adaptive composites and biocomposites are presented. Product development, cost analysis and study of new markets are practiced in team work. Content Basics of composite materials Constituents Processing of composites Design of composite structures Current development Nanocomposites Textile composites Biocomposites Adaptive composites Applications Driving forces and markets Cost analysis Aerospace Automotive Sport Keywords Composites - Applications - Nanocomposites - Biocomposites - Adaptive composites - Design - Cost Learning Prerequisites Required courses Notion of polymers Recommended courses Polymer Composites Learning Outcomes By the end of the course, the student must be able to: Propose suitable design, production and performance criteria for the production of a composite part Apply the basic equations for process and mechanical properties modelling for composite materials Discuss the main types of composite applications Transversal skills Use a work methodology appropriate to the task. Use both general and domain specific IT resources and tools Communicate effectively with professionals from other disciplines. Evaluate one&#39;s own performance in the team, receive and respond appropriately to feedback. Teaching methods Ex cathedra and invited speakers Group sessions with exercises or work on the project Expected student activities Attendance at lectures Design of a composite part, bibliography search Assessment methods Written exam report and oral presentation in class
-</pre>
-</div>
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="Remove-punctuation">Remove punctuation<a class="anchor-link" href="#Remove-punctuation">&#182;</a></h3>
-</div>
-</div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 <div class="prompt input_prompt">In&nbsp;[6]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Remove the punctuation (except apostrophe which is used in stop words)</span>
-<span class="n">punctuation_table</span> <span class="o">=</span> <span class="s2">&quot;[</span><span class="si">{}</span><span class="s2">]+&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">string</span><span class="o">.</span><span class="n">punctuation</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\&#39;</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)))</span>
-
-<span class="k">for</span> <span class="n">course</span> <span class="ow">in</span> <span class="n">courses</span><span class="p">:</span>
-    <span class="n">course</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">punctuation_table</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="p">,</span> <span class="n">course</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">])</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">wiki_tokens</span> <span class="o">=</span> <span class="n">wikipedia</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">extract_tokens</span><span class="p">)</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">to_freq_dict</span><span class="p">)</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="n">freq_dict_union</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -12018,12 +11957,10 @@ The latest developments in processing and the novel generations of organic compo
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[7]:</div>
+<div class="prompt input_prompt">In&nbsp;[94]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Check the first course&#39;s description </span>
-<span class="nb">print</span><span class="p">(</span><span class="n">courses</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;courseId&#39;</span><span class="p">])</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">courses</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;description&#39;</span><span class="p">])</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="nb">len</span><span class="p">(</span><span class="n">wiki_tokens</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -12036,313 +11973,13 @@ The latest developments in processing and the novel generations of organic compo
 
 <div class="output_area">
 
-<div class="prompt"></div>
-
-
-<div class="output_subarea output_stream output_stdout output_text">
-<pre>MSE-440
-The latest developments in processing and the novel generations of organic composites are discussed  Nanocomposites  adaptive composites and biocomposites are presented  Product development  cost analysis and study of new markets are practiced in team work  Content Basics of composite materials Constituents Processing of composites Design of composite structures Current development Nanocomposites Textile composites Biocomposites Adaptive composites Applications Driving forces and markets Cost analysis Aerospace Automotive Sport Keywords Composites   Applications   Nanocomposites   Biocomposites   Adaptive composites   Design   Cost Learning Prerequisites Required courses Notion of polymers Recommended courses Polymer Composites Learning Outcomes By the end of the course  the student must be able to  Propose suitable design  production and performance criteria for the production of a composite part Apply the basic equations for process and mechanical properties modelling for composite materials Discuss the main types of composite applications Transversal skills Use a work methodology appropriate to the task  Use both general and domain specific IT resources and tools Communicate effectively with professionals from other disciplines  Evaluate one&#39;s own performance in the team  receive and respond appropriately to feedback  Teaching methods Ex cathedra and invited speakers Group sessions with exercises or work on the project Expected student activities Attendance at lectures Design of a composite part  bibliography search Assessment methods Written exam report and oral presentation in class
-</pre>
-</div>
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="Remove-stop-words,-then-remove-leftover-apostrophes">Remove stop words, then remove leftover apostrophes<a class="anchor-link" href="#Remove-stop-words,-then-remove-leftover-apostrophes">&#182;</a></h3>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[8]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Function that remove all the words in a words_list from course descriptions</span>
-<span class="k">def</span> <span class="nf">remove</span><span class="p">(</span><span class="n">words_lst</span><span class="p">):</span>
-    <span class="k">for</span> <span class="n">course</span> <span class="ow">in</span> <span class="n">courses</span><span class="p">:</span>
-        <span class="n">desc_lst</span> <span class="o">=</span> <span class="n">course</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
-        <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">words_lst</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">desc_lst</span><span class="p">:</span>
-                <span class="n">desc_lst</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">!=</span> <span class="n">word</span><span class="p">,</span> <span class="n">desc_lst</span><span class="p">))</span>
-        <span class="n">course</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">desc_lst</span><span class="p">)</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[9]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Function that capitalizes all the words in a words_list</span>
-<span class="k">def</span> <span class="nf">capitalize_words</span><span class="p">(</span><span class="n">words_lst</span><span class="p">):</span>
-    <span class="n">a</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([])</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">words_lst</span><span class="p">:</span>
-        <span class="n">a</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">capitalize</span><span class="p">())</span>
-    <span class="k">return</span> <span class="n">a</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[10]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">capitalized_stopwords</span> <span class="o">=</span> <span class="n">capitalize_words</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">stopwords</span><span class="p">))</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[11]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Remove the stopwords and capitalized_stopwords</span>
-<span class="n">remove</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">stopwords</span><span class="p">))</span>
-<span class="n">remove</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">capitalized_stopwords</span><span class="p">))</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[12]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Remove hanging apostrophes to join possesive &quot;s&quot; with the word</span>
-<span class="k">for</span> <span class="n">course</span> <span class="ow">in</span> <span class="n">courses</span><span class="p">:</span>
-    <span class="n">course</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">course</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;&#39;&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[13]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Check the first course&#39;s description without stop words</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">courses</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;courseId&#39;</span><span class="p">])</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">courses</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;description&#39;</span><span class="p">])</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area">
-
-<div class="prompt"></div>
-
-
-<div class="output_subarea output_stream output_stdout output_text">
-<pre>MSE-440
-latest developments processing generations organic composites discussed Nanocomposites adaptive composites biocomposites presented Product development cost analysis study markets practiced team work Content Basics composite materials Constituents Processing composites Design composite structures Current development Nanocomposites Textile composites Biocomposites Adaptive composites Applications Driving forces markets Cost analysis Aerospace Automotive Sport Keywords Composites Applications Nanocomposites Biocomposites Adaptive composites Design Cost Learning Prerequisites Required courses Notion polymers Recommended courses Polymer Composites Learning Outcomes end student Propose suitable design production performance criteria production composite part Apply basic equations process mechanical properties modelling composite materials Discuss main types composite applications Transversal skills work methodology task general domain specific IT resources tools Communicate effectively professionals disciplines Evaluate ones performance team receive respond appropriately feedback Teaching methods cathedra invited speakers Group sessions exercises work project Expected student activities Attendance lectures Design composite part bibliography search Assessment methods Written exam report oral presentation class
-</pre>
-</div>
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="Stem-the-words-with-nltk-library.">Stem the words with nltk library.<a class="anchor-link" href="#Stem-the-words-with-nltk-library.">&#182;</a></h3>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[14]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">ps</span> <span class="o">=</span> <span class="n">PS</span><span class="p">()</span>
-
-<span class="k">for</span> <span class="n">course</span> <span class="ow">in</span> <span class="n">courses</span><span class="p">:</span>
-    <span class="n">desc_lst</span> <span class="o">=</span> <span class="n">course</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">desc_lst</span><span class="p">)):</span>
-        <span class="n">desc_lst</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">ps</span><span class="o">.</span><span class="n">stem</span><span class="p">(</span><span class="n">desc_lst</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
-    <span class="n">course</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">course</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">desc_lst</span><span class="p">)</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[15]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Check the first course&#39;s description</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">courses</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;courseId&#39;</span><span class="p">])</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">courses</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;description&#39;</span><span class="p">])</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area">
-
-<div class="prompt"></div>
-
-
-<div class="output_subarea output_stream output_stdout output_text">
-<pre>MSE-440
-latest develop process gener organ composit discuss nanocomposit adapt composit biocomposit present product develop cost analysi studi market practic team work content basic composit materi constitu process composit design composit structur current develop nanocomposit textil composit biocomposit adapt composit applic drive forc market cost analysi aerospac automot sport keyword composit applic nanocomposit biocomposit adapt composit design cost learn prerequisit requir cours notion polym recommend cours polym composit learn outcom end student propos suitabl design product perform criteria product composit part appli basic equat process mechan properti model composit materi discuss main type composit applic transvers skill work methodolog task gener domain specif IT resourc tool commun effect profession disciplin evalu one perform team receiv respond appropri feedback teach method cathedra invit speaker group session exercis work project expect student activ attend lectur design composit part bibliographi search assess method written exam report oral present class
-</pre>
-</div>
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="Check-the-frequent-and-infrequent-words">Check the frequent and infrequent words<a class="anchor-link" href="#Check-the-frequent-and-infrequent-words">&#182;</a></h3>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[16]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Make frequent words list and infrequent words list</span>
-<span class="n">frequency_dict</span> <span class="o">=</span> <span class="p">{}</span>
-<span class="k">for</span> <span class="n">course</span> <span class="ow">in</span> <span class="n">courses</span><span class="p">:</span>
-    <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">course</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">():</span>
-            <span class="k">if</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">frequency_dict</span><span class="p">:</span>
-                <span class="n">frequency_dict</span><span class="p">[</span><span class="n">word</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">frequency_dict</span><span class="p">[</span><span class="n">word</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[17]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># See the number of unique words we have</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;num of words:&#39;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">frequency_dict</span><span class="p">))</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area">
-
-<div class="prompt"></div>
-
-
-<div class="output_subarea output_stream output_stdout output_text">
-<pre>num of words: 9758
-</pre>
-</div>
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[18]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">frequency_sorted</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">frequency_dict</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">reverse</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
-<span class="n">infrequency_sorted</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">frequency_dict</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[19]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Top 10 frequent words</span>
-<span class="n">frequency_sorted</span><span class="p">[:</span><span class="mi">10</span><span class="p">]</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area">
-
-<div class="prompt output_prompt">Out[19]:</div>
+<div class="prompt output_prompt">Out[94]:</div>
 
 
 
 
 <div class="output_text output_subarea output_execute_result">
-<pre>[(&#39;student&#39;, 2053),
- (&#39;method&#39;, 1814),
- (&#39;learn&#39;, 1633),
- (&#39;model&#39;, 1240),
- (&#39;system&#39;, 1201),
- (&#39;assess&#39;, 1017),
- (&#39;design&#39;, 991),
- (&#39;content&#39;, 923),
- (&#39;present&#39;, 793),
- (&#39;process&#39;, 792)]</pre>
+<pre>494494</pre>
 </div>
 
 </div>
@@ -12350,14 +11987,22 @@ latest develop process gener organ composit discuss nanocomposit adapt composit 
 </div>
 </div>
 
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>This is too large. And in what follows, we discover that too many of these words are extremely rare.</p>
+
+</div>
+</div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[20]:</div>
+<div class="prompt input_prompt">In&nbsp;[104]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Top 10 infrequent words</span>
-<span class="n">infrequency_sorted</span><span class="p">[:</span><span class="mi">10</span><span class="p">]</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Number of tokens that appear less than 10 times in the entire dataset: &#39;</span><span class="p">,</span><span class="nb">len</span><span class="p">([</span><span class="mi">1</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">wiki_tokens</span> <span class="k">if</span> <span class="n">wiki_tokens</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="p">]))</span>
 </pre></div>
 
 </div>
@@ -12370,22 +12015,197 @@ latest develop process gener organ composit discuss nanocomposit adapt composit 
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[20]:</div>
+<div class="prompt"></div>
+
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>Number of tokens that appear less than 10 times in the entire dataset:  441918
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[105]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Number of tokens that appear less than 100 times in the entire dataset: &#39;</span><span class="p">,</span><span class="nb">len</span><span class="p">([</span><span class="mi">1</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">wiki_tokens</span> <span class="k">if</span> <span class="n">wiki_tokens</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">100</span><span class="p">]))</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt"></div>
+
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>Number of tokens that appear less than 100 times in the entire dataset:  482172
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>So we set to remove very infrequent words. We will generate and play with 2 different datasets, one very small, containing only tokens with frequencies between $100$ and $7313$, and the other one a bit larger, containing tokens with frequencies between $30$ and $10000$. The upper bounds were obtained by looking at the most frequent terms that can be seen below.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[107]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">operator</span>
+<span class="n">sorted_wiki_tokens</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">wiki_tokens</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="n">operator</span><span class="o">.</span><span class="n">itemgetter</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[108]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">sorted_wiki_tokens</span><span class="p">[:</span><span class="mi">100</span><span class="p">]</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[108]:</div>
 
 
 
 
 <div class="output_text output_subarea output_execute_result">
-<pre>[(&#39;imagej&#39;, 1),
- (&#39;fiji&#39;, 1),
- (&#39;1h30&#39;, 1),
- (&#39;metadata&#39;, 1),
- (&#39;stitch&#39;, 1),
- (&#39;fij&#39;, 1),
- (&#39;nontrad&#39;, 1),
- (&#39;begiven&#39;, 1),
- (&#39;statiqu&#39;, 1),
- (&#39;102&#39;, 1)]</pre>
+<pre>[(&#39;–&#39;, 22751),
+ (&#39;time&#39;, 22247),
+ (&#39;years&#39;, 19551),
+ (&#39;world&#39;, 19172),
+ (&#39;war&#39;, 18962),
+ (&#39;united&#39;, 17844),
+ (&#39;american&#39;, 17580),
+ (&#39;states&#39;, 17140),
+ (&#39;city&#39;, 17107),
+ (&#39;century&#39;, 15808),
+ (&#39;called&#39;, 14269),
+ (&#39;number&#39;, 14253),
+ (&#39;made&#39;, 14231),
+ (&#39;government&#39;, 13835),
+ (&#39;people&#39;, 13312),
+ (&#39;british&#39;, 13210),
+ (&#39;state&#39;, 12877),
+ (&#39;early&#39;, 12791),
+ (&#39;part&#39;, 12745),
+ (&#39;including&#39;, 12743),
+ (&#39;south&#39;, 12339),
+ (&#39;system&#39;, 12160),
+ (&#39;year&#39;, 11546),
+ (&#39;large&#39;, 11530),
+ (&#39;national&#39;, 11276),
+ (&#39;north&#39;, 11180),
+ (&#39;water&#39;, 10860),
+ (&#39;english&#39;, 10710),
+ (&#39;form&#39;, 10705),
+ (&#39;great&#39;, 10623),
+ (&#39;found&#39;, 10395),
+ (&#39;french&#39;, 10188),
+ (&#39;high&#39;, 10113),
+ (&#39;area&#39;, 10071),
+ (&#39;work&#39;, 9853),
+ (&#39;major&#39;, 9624),
+ (&#39;population&#39;, 9615),
+ (&#39;life&#39;, 9217),
+ (&#39;march&#39;, 9161),
+ (&#39;general&#39;, 9029),
+ (&#39;january&#39;, 8934),
+ (&#39;common&#39;, 8922),
+ (&#39;history&#39;, 8885),
+ (&#39;john&#39;, 8846),
+ (&#39;power&#39;, 8789),
+ (&#39;species&#39;, 8727),
+ (&#39;related&#39;, 8711),
+ (&#39;small&#39;, 8668),
+ (&#39;king&#39;, 8654),
+ (&#39;modern&#39;, 8571),
+ (&#39;de&#39;, 8398),
+ (&#39;july&#39;, 8395),
+ (&#39;england&#39;, 8394),
+ (&#39;due&#39;, 8372),
+ (&#39;international&#39;, 8331),
+ (&#39;german&#39;, 8316),
+ (&#39;include&#39;, 8310),
+ (&#39;end&#39;, 8284),
+ (&#39;period&#39;, 8283),
+ (&#39;president&#39;, 8245),
+ (&#39;june&#39;, 8188),
+ (&#39;october&#39;, 8164),
+ (&#39;group&#39;, 8156),
+ (&#39;december&#39;, 8155),
+ (&#39;million&#39;, 8141),
+ (&#39;political&#39;, 8028),
+ (&#39;september&#39;, 7949),
+ (&#39;long&#39;, 7940),
+ (&#39;country&#39;, 7877),
+ (&#39;west&#39;, 7783),
+ (&#39;day&#39;, 7778),
+ (&#39;august&#39;, 7664),
+ (&#39;important&#39;, 7627),
+ (&#39;order&#39;, 7578),
+ (&#39;set&#39;, 7502),
+ (&#39;st&#39;, 7494),
+ (&#39;november&#39;, 7492),
+ (&#39;april&#39;, 7441),
+ (&#39;east&#39;, 7402),
+ (&#39;series&#39;, 7398),
+ (&#39;—&#39;, 7313),
+ (&#39;public&#39;, 7305),
+ (&#39;army&#39;, 7275),
+ (&#39;began&#39;, 7261),
+ (&#39;european&#39;, 7116),
+ (&#39;february&#39;, 7095),
+ (&#39;death&#39;, 7040),
+ (&#39;military&#39;, 7009),
+ (&#39;europe&#39;, 6989),
+ (&#39;law&#39;, 6956),
+ (&#39;led&#39;, 6922),
+ (&#39;central&#39;, 6866),
+ (&#39;house&#39;, 6839),
+ (&#39;river&#39;, 6820),
+ (&#39;ii&#39;, 6814),
+ (&#39;·&#39;, 6789),
+ (&#39;point&#39;, 6773),
+ (&#39;centre&#39;, 6748),
+ (&#39;based&#39;, 6746),
+ (&#39;music&#39;, 6720)]</pre>
 </div>
 
 </div>
@@ -12398,28 +12218,20 @@ latest develop process gener organ composit discuss nanocomposit adapt composit 
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="Frequent-and-infrequent-words">Frequent and infrequent words<a class="anchor-link" href="#Frequent-and-infrequent-words">&#182;</a></h3><ul>
-<li>Frequent words, like 'student' and 'method', are very general and don't affect the courses' characteristics. </li>
-<li>Also infrequent words, like 'imagej' and 'fiji', are too specialized and not useful for characterising courses.</li>
-</ul>
-<p>Let's remove these words. Frequent words are not so many but dominant, so remove 0.1% (around the top 10) of frequent words. Remove all infrequent words that appear only once.</p>
-
+<h3 id="The-smaller-dataset">The smaller dataset<a class="anchor-link" href="#The-smaller-dataset">&#182;</a></h3>
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[21]:</div>
+<div class="prompt input_prompt">In&nbsp;[80]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Function that extracts a certain percentage of words from a words_lst.</span>
-<span class="k">def</span> <span class="nf">extract</span><span class="p">(</span><span class="n">words_lst</span><span class="p">,</span> <span class="n">percent</span><span class="p">):</span>
-    <span class="n">removed</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="n">taken_lst</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">while</span> <span class="n">removed</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">words_lst</span><span class="p">)</span><span class="o">*</span><span class="n">percent</span><span class="o">*</span><span class="mf">0.01</span><span class="p">:</span>
-        <span class="n">taken_lst</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">words_lst</span><span class="p">[</span><span class="n">removed</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
-        <span class="n">removed</span> <span class="o">+=</span> <span class="mi">1</span>
-    <span class="k">return</span> <span class="n">taken_lst</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># create a new dictionary of the needed words</span>
+<span class="n">wiki_tokens_filtered_alot</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">wiki_tokens</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">wiki_tokens</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">100</span> <span class="ow">and</span> <span class="n">wiki_tokens</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">7313</span><span class="p">:</span>
+        <span class="n">wiki_tokens_filtered_alot</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">=</span> <span class="n">wiki_tokens</span><span class="p">[</span><span class="n">x</span><span class="p">]</span>
 </pre></div>
 
 </div>
@@ -12429,14 +12241,11 @@ latest develop process gener organ composit discuss nanocomposit adapt composit 
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[22]:</div>
+<div class="prompt input_prompt">In&nbsp;[81]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Extract 0.1% of frequent words and all infrequent (freq=1) words.</span>
-<span class="n">frequent_words</span> <span class="o">=</span> <span class="n">extract</span><span class="p">(</span><span class="n">frequency_sorted</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">)</span>
-<span class="n">infrequent_words</span> <span class="o">=</span> <span class="p">[</span><span class="n">word</span> <span class="k">for</span> <span class="n">word</span><span class="p">,</span> <span class="n">freq</span> <span class="ow">in</span> <span class="n">infrequency_sorted</span> <span class="k">if</span> <span class="n">freq</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">]</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;num of frequent words:   &quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">frequent_words</span><span class="p">))</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;num of infrequent words: &quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">infrequent_words</span><span class="p">))</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">new_small_dict</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">wiki_tokens_filtered_alot</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+<span class="nb">len</span><span class="p">(</span><span class="n">wiki_tokens_filtered_alot</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -12449,226 +12258,13 @@ latest develop process gener organ composit discuss nanocomposit adapt composit 
 
 <div class="output_area">
 
-<div class="prompt"></div>
-
-
-<div class="output_subarea output_stream output_stdout output_text">
-<pre>num of frequent words:    10
-num of infrequent words:  4282
-</pre>
-</div>
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[23]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">remove</span><span class="p">(</span><span class="n">frequent_words</span><span class="p">)</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[24]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">remove</span><span class="p">(</span><span class="n">infrequent_words</span><span class="p">)</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[25]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Check the first course&#39;s description</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">courses</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;courseId&#39;</span><span class="p">])</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">courses</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;description&#39;</span><span class="p">])</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area">
-
-<div class="prompt"></div>
-
-
-<div class="output_subarea output_stream output_stdout output_text">
-<pre>MSE-440
-latest develop gener organ composit discuss nanocomposit adapt composit biocomposit product develop cost analysi studi market practic team work basic composit materi constitu composit composit structur current develop nanocomposit textil composit biocomposit adapt composit applic drive forc market cost analysi aerospac automot sport keyword composit applic nanocomposit biocomposit adapt composit cost prerequisit requir cours notion polym recommend cours polym composit outcom end propos suitabl product perform criteria product composit part appli basic equat mechan properti composit materi discuss main type composit applic transvers skill work methodolog task gener domain specif IT resourc tool commun effect profession disciplin evalu one perform team receiv respond appropri feedback teach cathedra invit speaker group session exercis work project expect activ attend lectur composit part bibliographi search written exam report oral class
-</pre>
-</div>
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[26]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">save_pkl</span><span class="p">(</span><span class="n">courses</span><span class="p">,</span> <span class="s1">&#39;courses_prepped.pkl&#39;</span><span class="p">)</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="1.-Explain-which-ones-you-implemented-and-why.">1. Explain which ones you implemented and why.<a class="anchor-link" href="#1.-Explain-which-ones-you-implemented-and-why.">&#182;</a></h3><ul>
-<li>We implemented removing stopwords, punctuation, the very frequent words, the infrequent words, the stem words .</li>
-<li>Clearly, stopwords and punctuation are needless for characterizing courses.</li>
-<li>Also, as we mentioned in the "frequent and infrequent words part", frequent words are too general and infrequent words like 'imagej' and 'fiji', are too specialized and not useful for characterising courses. Therefore we removed them.</li>
-<li>For the stemming and lemmatise, they are similar ones, so I chose stemming for this project.</li>
-</ul>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="2.-Print-the-terms-in-the-pre-processed-description-of-the-IX-class-in-alphabetical-order.">2. Print the terms in the pre-processed description of the IX class in alphabetical order.<a class="anchor-link" href="#2.-Print-the-terms-in-the-pre-processed-description-of-the-IX-class-in-alphabetical-order.">&#182;</a></h3>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[163]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">a</span> <span class="o">=</span> <span class="mi">0</span>
-<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">courses</span><span class="p">:</span>
-    <span class="k">if</span> <span class="n">i</span><span class="p">[</span><span class="s1">&#39;courseId&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;COM-308&#39;</span><span class="p">:</span>
-        <span class="n">ix_desc</span> <span class="o">=</span> <span class="n">i</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
-        <span class="n">ix_desc</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
-        <span class="nb">print</span><span class="p">(</span><span class="n">ix_desc</span><span class="p">)</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area">
-
-<div class="prompt"></div>
-
-
-<div class="output_subarea output_stream output_stdout output_text">
-<pre>[&#39;20&#39;, &#39;30&#39;, &#39;300&#39;, &#39;50&#39;, &#39;CO&#39;, &#39;acquir&#39;, &#39;activ&#39;, &#39;ad&#39;, &#39;ad&#39;, &#39;advertis&#39;, &#39;algebra&#39;, &#39;algebra&#39;, &#39;algorithm&#39;, &#39;algorithm&#39;, &#39;analysi&#39;, &#39;analyt&#39;, &#39;analyt&#39;, &#39;analyz&#39;, &#39;applic&#39;, &#39;applic&#39;, &#39;auction&#39;, &#39;auction&#39;, &#39;balanc&#39;, &#39;base&#39;, &#39;base&#39;, &#39;basic&#39;, &#39;basic&#39;, &#39;basic&#39;, &#39;cathedra&#39;, &#39;chain&#39;, &#39;class&#39;, &#39;class&#39;, &#39;class&#39;, &#39;cloud&#39;, &#39;cluster&#39;, &#39;cluster&#39;, &#39;collect&#39;, &#39;combin&#39;, &#39;commerc&#39;, &#39;commerc&#39;, &#39;commun&#39;, &#39;commun&#39;, &#39;commun&#39;, &#39;comput&#39;, &#39;comput&#39;, &#39;concept&#39;, &#39;concept&#39;, &#39;concret&#39;, &#39;contain&#39;, &#39;cours&#39;, &#39;cours&#39;, &#39;coverag&#39;, &#39;current&#39;, &#39;data&#39;, &#39;data&#39;, &#39;data&#39;, &#39;data&#39;, &#39;data&#39;, &#39;data&#39;, &#39;dataset&#39;, &#39;dataset&#39;, &#39;decad&#39;, &#39;dedic&#39;, &#39;detect&#39;, &#39;detect&#39;, &#39;develop&#39;, &#39;dimension&#39;, &#39;draw&#39;, &#39;effect&#39;, &#39;effici&#39;, &#39;end&#39;, &#39;exam&#39;, &#39;expect&#39;, &#39;explor&#39;, &#39;explor&#39;, &#39;explor&#39;, &#39;explor&#39;, &#39;explor&#39;, &#39;field&#39;, &#39;final&#39;, &#39;foundat&#39;, &#39;framework&#39;, &#39;function&#39;, &#39;fundament&#39;, &#39;good&#39;, &#39;graph&#39;, &#39;graph&#39;, &#39;hadoop&#39;, &#39;hadoop&#39;, &#39;hand&#39;, &#39;homework&#39;, &#39;homework&#39;, &#39;import&#39;, &#39;inform&#39;, &#39;inform&#39;, &#39;infrastructur&#39;, &#39;inspir&#39;, &#39;internet&#39;, &#39;internet&#39;, &#39;java&#39;, &#39;key&#39;, &#39;keyword&#39;, &#39;knowledg&#39;, &#39;lab&#39;, &#39;lab&#39;, &#39;lab&#39;, &#39;laboratori&#39;, &#39;larg&#39;, &#39;larg&#39;, &#39;larg&#39;, &#39;lectur&#39;, &#39;lectur&#39;, &#39;linear&#39;, &#39;linear&#39;, &#39;machin&#39;, &#39;machin&#39;, &#39;main&#39;, &#39;map&#39;, &#39;markov&#39;, &#39;materi&#39;, &#39;materi&#39;, &#39;media&#39;, &#39;midterm&#39;, &#39;mine&#39;, &#39;mine&#39;, &#39;mine&#39;, &#39;mine&#39;, &#39;network&#39;, &#39;network&#39;, &#39;network&#39;, &#39;network&#39;, &#39;number&#39;, &#39;number&#39;, &#39;onlin&#39;, &#39;onlin&#39;, &#39;onlin&#39;, &#39;onlin&#39;, &#39;onlin&#39;, &#39;outcom&#39;, &#39;past&#39;, &#39;practic&#39;, &#39;practic&#39;, &#39;prerequisit&#39;, &#39;problem&#39;, &#39;problem&#39;, &#39;project&#39;, &#39;provid&#39;, &#39;question&#39;, &#39;real&#39;, &#39;real&#39;, &#39;real&#39;, &#39;real&#39;, &#39;real&#39;, &#39;recommend&#39;, &#39;recommend&#39;, &#39;recommend&#39;, &#39;reduc&#39;, &#39;reduct&#39;, &#39;relat&#39;, &#39;requir&#39;, &#39;retriev&#39;, &#39;retriev&#39;, &#39;scale&#39;, &#39;scale&#39;, &#39;scale&#39;, &#39;search&#39;, &#39;search&#39;, &#39;seek&#39;, &#39;servic&#39;, &#39;servic&#39;, &#39;servic&#39;, &#39;servic&#39;, &#39;servic&#39;, &#39;session&#39;, &#39;session&#39;, &#39;social&#39;, &#39;social&#39;, &#39;social&#39;, &#39;social&#39;, &#39;social&#39;, &#39;spark&#39;, &#39;specif&#39;, &#39;start&#39;, &#39;statist&#39;, &#39;stochast&#39;, &#39;stream&#39;, &#39;stream&#39;, &#39;structur&#39;, &#39;teach&#39;, &#39;techniqu&#39;, &#39;theoret&#39;, &#39;theori&#39;, &#39;topic&#39;, &#39;topic&#39;, &#39;typic&#39;, &#39;ubiquit&#39;, &#39;user&#39;, &#39;weekli&#39;, &#39;work&#39;, &#39;world&#39;, &#39;world&#39;, &#39;world&#39;, &#39;world&#39;, &#39;world&#39;]
-</pre>
-</div>
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Exercise-4.2:-Term-document-matrix">Exercise 4.2: Term-document matrix<a class="anchor-link" href="#Exercise-4.2:-Term-document-matrix">&#182;</a></h2><ul>
-<li>computation of TF-IDF</li>
-</ul>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[164]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Make a set that contains all the words in the courses.</span>
-<span class="n">all_lst</span> <span class="o">=</span> <span class="p">[]</span>
-<span class="k">for</span> <span class="n">course</span> <span class="ow">in</span> <span class="n">courses</span><span class="p">:</span>
-    <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">course</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">():</span>
-        <span class="n">all_lst</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
-<span class="n">all_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">all_lst</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;The number of all words used in the courses&#39; descriptions is </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">all_set</span><span class="p">)))</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area">
-
-<div class="prompt"></div>
-
-
-<div class="output_subarea output_stream output_stdout output_text">
-<pre>The number of all words used in the courses&#39; descriptions is 5466.
-</pre>
-</div>
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[165]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Construct the TF matrix</span>
-<span class="n">TF_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">all_set</span><span class="p">),</span><span class="nb">len</span><span class="p">(</span><span class="n">courses</span><span class="p">)))</span>
-<span class="n">TF_matrix</span><span class="o">.</span><span class="n">shape</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area">
-
-<div class="prompt output_prompt">Out[165]:</div>
+<div class="prompt output_prompt">Out[81]:</div>
 
 
 
 
 <div class="output_text output_subarea output_execute_result">
-<pre>(5466, 854)</pre>
+<pre>12241</pre>
 </div>
 
 </div>
@@ -12679,12 +12275,36 @@ latest develop gener organ composit discuss nanocomposit adapt composit biocompo
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[166]:</div>
+<div class="prompt input_prompt">In&nbsp;[65]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Make indices for column (courseIds) and row (words).</span>
-<span class="n">column_indices</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="s1">&#39;courseId&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">courses</span><span class="p">]</span>
-<span class="n">row_indices</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">all_set</span><span class="p">)</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># given a json dump of a wiki article, removes unneeded tokens from it and returns article object</span>
+<span class="k">def</span> <span class="nf">remove_infreq_terms</span><span class="p">(</span><span class="n">json_dump</span><span class="p">):</span>
+    <span class="n">article</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">json_dump</span><span class="p">)</span>
+    <span class="n">article</span><span class="p">[</span><span class="s1">&#39;tokens&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">token</span> <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">article</span><span class="p">[</span><span class="s1">&#39;tokens&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">new_dict</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">article</span>
+
+<span class="c1"># same as above, only for the smaller dataset</span>
+<span class="c1"># note that in this case, a smaller dictionary is used to get rid of tokens</span>
+<span class="k">def</span> <span class="nf">remove_infreq_terms_2</span><span class="p">(</span><span class="n">json_dump</span><span class="p">):</span>
+    <span class="n">article</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">json_dump</span><span class="p">)</span>
+    <span class="n">article</span><span class="p">[</span><span class="s1">&#39;tokens&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">token</span> <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">article</span><span class="p">[</span><span class="s1">&#39;tokens&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">new_small_dict</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">article</span>
+
+<span class="c1"># given an article object, returns an (id, bag_of_words_vector) pair necessary for the spark LDA fucntin</span>
+<span class="k">def</span> <span class="nf">prepare_for_lda</span><span class="p">(</span><span class="n">article</span><span class="p">):</span>
+    <span class="n">bag_of_words</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">new_dict</span><span class="p">))]</span>
+    <span class="k">for</span> <span class="n">term</span> <span class="ow">in</span> <span class="n">article</span><span class="p">[</span><span class="s1">&#39;tokens&#39;</span><span class="p">]:</span>
+        <span class="n">bag_of_words</span><span class="p">[</span><span class="n">new_dict</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">term</span><span class="p">)]</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">article</span><span class="p">[</span><span class="s1">&#39;page_id&#39;</span><span class="p">],</span> <span class="n">Vectors</span><span class="o">.</span><span class="n">dense</span><span class="p">(</span><span class="n">bag_of_words</span><span class="p">)]</span>
+
+<span class="c1"># same as above, only for the smaller dataset</span>
+<span class="c1"># note that in this case, a smaller dictionary is used to get rid of tokens</span>
+<span class="k">def</span> <span class="nf">prepare_for_lda_small</span><span class="p">(</span><span class="n">article</span><span class="p">):</span>
+    <span class="n">bag_of_words</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">new_small_dict</span><span class="p">))]</span>
+    <span class="k">for</span> <span class="n">term</span> <span class="ow">in</span> <span class="n">article</span><span class="p">[</span><span class="s1">&#39;tokens&#39;</span><span class="p">]:</span>
+        <span class="n">bag_of_words</span><span class="p">[</span><span class="n">new_small_dict</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">term</span><span class="p">)]</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">article</span><span class="p">[</span><span class="s1">&#39;page_id&#39;</span><span class="p">],</span> <span class="n">Vectors</span><span class="o">.</span><span class="n">dense</span><span class="p">(</span><span class="n">bag_of_words</span><span class="p">)]</span>
 </pre></div>
 
 </div>
@@ -12694,14 +12314,13 @@ latest develop gener organ composit discuss nanocomposit adapt composit biocompo
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[167]:</div>
+<div class="prompt input_prompt">In&nbsp;[33]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">word</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">row_indices</span><span class="p">):</span>
-    <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">course</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">courses</span><span class="p">):</span>
-        <span class="n">desc_lst</span> <span class="o">=</span> <span class="n">course</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
-        <span class="n">occur_time</span> <span class="o">=</span> <span class="n">desc_lst</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
-        <span class="n">TF_matrix</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">occur_time</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">desc_lst</span><span class="p">)</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># filter data and transform into form required by the LDA.train function</span>
+<span class="n">wikipedia_filtered_alot</span> <span class="o">=</span> <span class="n">wikipedia</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">remove_infreq_terms_2</span><span class="p">)</span>
+<span class="n">small_wikipedia_ready_for_lda</span> <span class="o">=</span> <span class="n">wikipedia_filtered_alot</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">prepare_for_lda_small</span><span class="p">)</span>
+<span class="n">small_wiki_lda_models</span> <span class="o">=</span> <span class="p">{}</span>
 </pre></div>
 
 </div>
@@ -12711,10 +12330,18 @@ latest develop gener organ composit discuss nanocomposit adapt composit biocompo
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[168]:</div>
+<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">IDF</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">all_set</span><span class="p">))</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># note: this piece of code was run in the cell below, </span>
+<span class="c1"># and was carried here to rerun describe_topics with labels, without losing the model</span>
+<span class="n">n_topics</span> <span class="o">=</span> <span class="mi">20</span>
+<span class="n">small_wiki_lda_models</span><span class="p">[</span><span class="s1">&#39;b=1.3,a=6.0,high-freq-words-removed&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">LDA</span><span class="o">.</span><span class="n">train</span><span class="p">(</span><span class="n">small_wikipedia_ready_for_lda</span><span class="p">,</span> 
+                                                                         <span class="n">seed</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> 
+                                                                         <span class="n">docConcentration</span><span class="o">=</span><span class="mf">6.0</span><span class="p">,</span> 
+                                                                         <span class="n">topicConcentration</span><span class="o">=</span><span class="mf">1.3</span><span class="p">,</span> 
+                                                                         <span class="n">maxIterations</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> 
+                                                                         <span class="n">k</span><span class="o">=</span><span class="n">n_topics</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -12724,406 +12351,12 @@ latest develop gener organ composit discuss nanocomposit adapt composit biocompo
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[169]:</div>
+<div class="prompt input_prompt">In&nbsp;[113]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Construct the IDF</span>
-<span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">row_indices</span><span class="p">)):</span>
-    <span class="n">course_sum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">TF_matrix</span><span class="p">[</span><span class="n">row</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span>
-    <span class="n">IDF</span><span class="p">[</span><span class="n">row</span><span class="p">]</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">courses</span><span class="p">)</span><span class="o">/</span><span class="n">course_sum</span><span class="p">)</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[170]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">IDF</span> <span class="o">=</span> <span class="n">IDF</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">IDF</span><span class="p">),</span><span class="mi">1</span><span class="p">)</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[171]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">IDF</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area">
-
-<div class="prompt output_prompt">Out[171]:</div>
-
-
-
-
-<div class="output_text output_subarea output_execute_result">
-<pre>array([[ 2.89978359],
-       [ 0.98787981],
-       [ 3.38263536],
-       ..., 
-       [ 5.65131891],
-       [ 6.74993119],
-       [ 6.05678401]])</pre>
-</div>
-
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[172]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Construct the TFIDF_matrix</span>
-<span class="n">TFIDF_matrix</span> <span class="o">=</span> <span class="n">TF_matrix</span><span class="o">*</span><span class="n">IDF</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[173]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">TFIDF_matrix</span><span class="o">.</span><span class="n">shape</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area">
-
-<div class="prompt output_prompt">Out[173]:</div>
-
-
-
-
-<div class="output_text output_subarea output_execute_result">
-<pre>(5466, 854)</pre>
-</div>
-
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[174]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">TFIDF_matrix</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area">
-
-<div class="prompt output_prompt">Out[174]:</div>
-
-
-
-
-<div class="output_text output_subarea output_execute_result">
-<pre>array([[ 0.        ,  0.        ,  0.        , ...,  0.        ,
-         0.        ,  0.        ],
-       [ 0.01555716,  0.01829407,  0.        , ...,  0.        ,
-         0.03186709,  0.03951519],
-       [ 0.        ,  0.        ,  0.        , ...,  0.        ,
-         0.        ,  0.        ],
-       ..., 
-       [ 0.        ,  0.        ,  0.        , ...,  0.        ,
-         0.        ,  0.        ],
-       [ 0.        ,  0.        ,  0.        , ...,  0.        ,
-         0.        ,  0.        ],
-       [ 0.        ,  0.        ,  0.        , ...,  0.        ,
-         0.        ,  0.        ]])</pre>
-</div>
-
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[175]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">save_pkl</span><span class="p">(</span><span class="n">TFIDF_matrix</span><span class="p">,</span> <span class="s1">&#39;tfidx_matrix.pkl&#39;</span><span class="p">)</span>
-<span class="n">save_pkl</span><span class="p">(</span><span class="n">column_indices</span><span class="p">,</span> <span class="s1">&#39;courses.pkl&#39;</span><span class="p">)</span>
-<span class="n">save_pkl</span><span class="p">(</span><span class="n">row_indices</span><span class="p">,</span> <span class="s1">&#39;terms.pkl&#39;</span><span class="p">)</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[176]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Take the TFIDF values of  &#39;COM-308&#39;</span>
-<span class="n">ix_index</span> <span class="o">=</span> <span class="n">column_indices</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s1">&#39;COM-308&#39;</span><span class="p">)</span>
-<span class="n">ix_word</span> <span class="o">=</span> <span class="n">TFIDF_matrix</span><span class="p">[:,</span> <span class="n">ix_index</span><span class="p">]</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[177]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">ix_TFIDF_vals</span> <span class="o">=</span> <span class="p">{}</span>
-<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ix_word</span><span class="p">):</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">val</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">:</span>
-        <span class="k">continue</span>
-    <span class="n">ix_TFIDF_vals</span><span class="p">[</span><span class="n">row_indices</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="o">=</span> <span class="n">val</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="1.-Print-the-15-terms-in-the-description-of-the-IX-class-with-the-highest-TF-IDF-scores">1. Print the 15 terms in the description of the IX class with the highest TF-IDF scores<a class="anchor-link" href="#1.-Print-the-15-terms-in-the-description-of-the-IX-class-with-the-highest-TF-IDF-scores">&#182;</a></h3>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[178]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Show the 15 terms in the description of the IX class with the highest TF-IDF scores.</span>
-<span class="n">ix_TFIDF_vals_sorted</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">ix_TFIDF_vals</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">reverse</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
-<span class="n">ix_TFIDF_vals_sorted</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">15</span><span class="p">]</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area">
-
-<div class="prompt output_prompt">Out[178]:</div>
-
-
-
-
-<div class="output_text output_subarea output_execute_result">
-<pre>[(&#39;mine&#39;, 0.091578228472720277),
- (&#39;servic&#39;, 0.087546013809819231),
- (&#39;onlin&#39;, 0.084659174700594128),
- (&#39;social&#39;, 0.076936600028047683),
- (&#39;world&#39;, 0.070557112325506835),
- (&#39;explor&#39;, 0.069556573244128034),
- (&#39;hadoop&#39;, 0.059380235423810046),
- (&#39;real&#39;, 0.055980957723872203),
- (&#39;auction&#39;, 0.052584674830085089),
- (&#39;commerc&#39;, 0.052584674830085089),
- (&#39;retriev&#39;, 0.047098245536600553),
- (&#39;internet&#39;, 0.045789114236360139),
- (&#39;network&#39;, 0.045240783084279479),
- (&#39;dataset&#39;, 0.041029233689480714),
- (&#39;stream&#39;, 0.039626284242023135)]</pre>
-</div>
-
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="2.-Explain-where-the-difference-between-the-large-scores-and-the-small-ones-comes-from.">2. Explain where the difference between the large scores and the small ones comes from.<a class="anchor-link" href="#2.-Explain-where-the-difference-between-the-large-scores-and-the-small-ones-comes-from.">&#182;</a></h3><ul>
-<li>Compared to the top words, like 'onlin' or 'realworld', some words like 'model' and 'data' occured in the description of IX class. However their TFIDF values are relatively small. The reason is that these words like 'model' and 'data' also occur in other courses' descriptions. Frequency for all descriptions is the defference between the large scores and the small ones comes from.</li>
-</ul>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Exercise-4.3:-Document-similarity-search">Exercise 4.3: Document similarity search<a class="anchor-link" href="#Exercise-4.3:-Document-similarity-search">&#182;</a></h2>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[179]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Construct query vectors for markov chain and facebook</span>
-<span class="n">markov_chain</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">row_indices</span><span class="p">))</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">row_indices</span><span class="p">),</span><span class="mi">1</span><span class="p">)</span>
-<span class="n">markov_chain</span><span class="p">[</span><span class="n">row_indices</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s1">&#39;markov&#39;</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">1</span><span class="o">/</span><span class="mi">2</span>
-<span class="n">markov_chain</span><span class="p">[</span><span class="n">row_indices</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s1">&#39;chain&#39;</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">1</span><span class="o">/</span><span class="mi">2</span>
-
-<span class="n">facebook</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">row_indices</span><span class="p">))</span>
-<span class="n">facebook</span><span class="p">[</span><span class="n">row_indices</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s1">&#39;facebook&#39;</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">1</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[180]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Function that calculates the cosine similarity of  2 documents</span>
-<span class="k">def</span> <span class="nf">similarity</span><span class="p">(</span><span class="n">di</span><span class="p">,</span> <span class="n">dj</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">di</span><span class="p">,</span> <span class="n">dj</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">LA</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">di</span><span class="p">)</span> <span class="o">*</span> <span class="n">LA</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">dj</span><span class="p">))</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[181]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">markov_similarity</span> <span class="o">=</span> <span class="p">[]</span>
-<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">column_indices</span><span class="p">)):</span>
-    <span class="n">markov_similarity</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">similarity</span><span class="p">(</span><span class="n">TFIDF_matrix</span><span class="o">.</span><span class="n">T</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">markov_chain</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[182]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Make a dictionary of (course name: similarity value)</span>
-<span class="n">markov_sim_vals</span> <span class="o">=</span> <span class="p">{}</span>
-<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">sim</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">markov_similarity</span><span class="p">):</span>
-    <span class="n">markov_sim_vals</span><span class="p">[</span><span class="n">courses</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;name&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">sim</span>
-    
-<span class="c1"># Sort by similarity value</span>
-<span class="n">markov_sim_vals_sorted</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">markov_sim_vals</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">reverse</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[183]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">facebook_similarity</span> <span class="o">=</span> <span class="p">[]</span>
-<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">column_indices</span><span class="p">)):</span>
-    <span class="n">facebook_similarity</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">similarity</span><span class="p">(</span><span class="n">TFIDF_matrix</span><span class="o">.</span><span class="n">T</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">facebook</span><span class="p">))</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[184]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Make a dictionary of (course name: similarity value)</span>
-<span class="n">facebook_sim_vals</span> <span class="o">=</span> <span class="p">{}</span>
-<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">sim</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">facebook_similarity</span><span class="p">):</span>
-    <span class="n">facebook_sim_vals</span><span class="p">[</span><span class="n">courses</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;name&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">sim</span>
-
-<span class="c1"># Sort by similarity value</span>
-<span class="n">facebook_sim_vals_sorted</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">facebook_sim_vals</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">reverse</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="1.-Display-the-top-five-courses-together-with-their-similarity-score-for-each-query.">1. Display the top five courses together with their similarity score for each query.<a class="anchor-link" href="#1.-Display-the-top-five-courses-together-with-their-similarity-score-for-each-query.">&#182;</a></h3>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[185]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Print the top 5 courses</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;The top five courses together with their similarity score for query markov chain&quot;</span><span class="p">)</span>
-<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">):</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">markov_sim_vals_sorted</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Topic labels added later after analysis</span>
+<span class="n">topic_labels</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;(?) Italy&#39;</span><span class="p">,</span> <span class="s1">&#39;(?)&#39;</span><span class="p">,</span> <span class="s1">&#39;Cosmos / Solar System&#39;</span><span class="p">,</span> <span class="s1">&#39;Zoology&#39;</span><span class="p">,</span> <span class="s1">&#39;Wars&#39;</span><span class="p">,</span> <span class="s1">&#39;Literature&#39;</span><span class="p">,</span> <span class="s1">&#39;(ancient) History&#39;</span><span class="p">,</span> <span class="s1">&#39;Politics&#39;</span><span class="p">,</span> <span class="s1">&#39;Economics&#39;</span><span class="p">,</span> <span class="s1">&#39;(?) General civitizenship info ?&#39;</span><span class="p">,</span> <span class="s1">&#39;Geography&#39;</span><span class="p">,</span> <span class="s1">&#39;Geography&#39;</span><span class="p">,</span> <span class="s1">&#39;Enteratinment&#39;</span><span class="p">,</span> <span class="s1">&#39;Religion&#39;</span><span class="p">,</span> <span class="s1">&#39;(?) Wales and Islam&#39;</span><span class="p">,</span> <span class="s1">&#39;Technology/Computers&#39;</span><span class="p">,</span> <span class="s1">&#39;Microbiology and Natural Phenomena&#39;</span><span class="p">,</span> <span class="s1">&#39;Energy/General Science&#39;</span><span class="p">,</span> <span class="s1">&#39;Art&#39;</span><span class="p">,</span> <span class="s1">&#39;Mathematics&#39;</span><span class="p">]</span>
+<span class="n">describe_topics</span><span class="p">(</span><span class="n">small_wiki_lda_models</span><span class="p">[</span><span class="s1">&#39;b=1.3,a=6.0,high-freq-words-removed&#39;</span><span class="p">],</span> <span class="n">new_small_dict</span><span class="p">,</span> <span class="n">n_words_per_topic</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">topic_labels</span><span class="o">=</span><span class="n">topic_labels</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -13140,12 +12373,246 @@ latest develop gener organ composit discuss nanocomposit adapt composit biocompo
 
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>The top five courses together with their similarity score for query markov chain
-(&#39;Applied stochastic processes&#39;, 0.58755084846323447)
-(&#39;Applied probability &amp; stochastic processes&#39;, 0.53961015057965878)
-(&#39;Markov chains and algorithmic applications&#39;, 0.45636978045262666)
-(&#39;Supply chain management&#39;, 0.3903593823655549)
-(&#39;Mathematical models in supply chain management&#39;, 0.31751041450037115)
+<pre>== Topic 1 - (?) Italy ==
+        Term | Score     
+    calendar | 0.012410440632909536
+    february | 0.010220568025804505
+       italy | 0.004590426379301236
+          ii | 0.004523965758868512
+     italian | 0.004391296723165262
+        pope | 0.0042627814455455226
+        flag | 0.004135060955597644
+        paul | 0.0041176258016767065
+        died | 0.0038478387588980695
+      writer | 0.0035922444893741394
+== Topic 2 - (?) ==
+        Term | Score     
+    february | 0.008847059776020032
+       actor | 0.007315594107590482
+     actress | 0.004860964123977584
+      soviet | 0.004680961898359112
+           $ | 0.004510262120405354
+       prize | 0.0041271193560028915
+    calendar | 0.004055931021639767
+       nobel | 0.003981890000821442
+    canadian | 0.003807959056410869
+        york | 0.0034224949845110225
+== Topic 3 - Cosmos / Solar System ==
+        Term | Score     
+       earth | 0.010664187092534068
+         sun | 0.007507146007678085
+        moon | 0.007460918605179476
+       space | 0.007202713368172255
+      planet | 0.006557396511056079
+       orbit | 0.00552999966411669
+     planets | 0.00513027719357131
+          km | 0.005026512089401553
+       solar | 0.0045933659803087225
+     surface | 0.004339908654654707
+== Topic 4 - Zoology ==
+        Term | Score     
+     animals | 0.005556534475814178
+       genus | 0.00443036376625163
+     disease | 0.004332824576394603
+       birds | 0.004159771614825597
+       human | 0.0038422046479358713
+      humans | 0.0036992215366560715
+         ice | 0.003393495652254002
+        food | 0.003361112855481257
+       range | 0.0032901272873851425
+       areas | 0.003158476085153236
+== Topic 5 - Wars ==
+        Term | Score     
+       force | 0.008843186970802898
+    aircraft | 0.008284767282549017
+      battle | 0.007254842283458245
+      forces | 0.007055511681059818
+         air | 0.0065640960943285235
+    japanese | 0.00616193942539276
+       ships | 0.005956132451526549
+      attack | 0.005687108621471408
+        navy | 0.005046831223772642
+       royal | 0.004531868165783619
+== Topic 6 - Literature ==
+        Term | Score     
+    language | 0.006242325138728133
+       works | 0.0058948464495833216
+     written | 0.005149869696320677
+        book | 0.005053765260509441
+       music | 0.0046238529981490065
+  philosophy | 0.004152085099613545
+   published | 0.003830186701306676
+       words | 0.003737478091363204
+     chinese | 0.0036215375967338826
+     writing | 0.003557739870653443
+== Topic 7 - (ancient) History ==
+        Term | Score     
+          bc | 0.010392484534968233
+       roman | 0.00988020725740552
+      empire | 0.008470689056013395
+        army | 0.0059692528447965664
+       greek | 0.0052361854224362
+      battle | 0.004260883668436659
+        jews | 0.004085851478108719
+     ancient | 0.004050405714106583
+      jewish | 0.0038116322555077626
+      polish | 0.003746440079701819
+== Topic 8 - Politics ==
+        Term | Score     
+       party | 0.00788293267917834
+    republic | 0.007424845335123232
+       union | 0.006930140441497706
+    military | 0.005489853916227389
+    minister | 0.0052511993891419225
+      france | 0.004956443392389828
+     ireland | 0.0049446338325056585
+  parliament | 0.004566328904586515
+    european | 0.004453194663098345
+     kingdom | 0.004442160043952875
+== Topic 9 - Economics ==
+        Term | Score     
+        bank | 0.0050850804545499225
+    economic | 0.0042657193969379325
+   countries | 0.0040726959377454025
+      market | 0.004053784202099793
+       money | 0.0034788786478769087
+   financial | 0.0034502732183033956
+      public | 0.0034050644732072006
+    business | 0.003289550096797291
+     company | 0.0029235877912672033
+     capital | 0.0028298640713349346
+== Topic 10 - (?) General civitizenship info ? ==
+        Term | Score     
+        open | 0.008240102808925806
+           • | 0.007719252456070072
+  university | 0.005660159844420917
+      school | 0.004980972043604912
+       grand | 0.004802088514925397
+      london | 0.0046283800355427975
+       court | 0.004366793445255637
+     college | 0.004247360170859618
+         won | 0.0039751181690841795
+       house | 0.003942722770239736
+== Topic 11 - Geography ==
+        Term | Score     
+       river | 0.0082904592339712
+         sea | 0.006904550731142649
+      island | 0.006709120149227107
+     largest | 0.006132254451804295
+      centre | 0.005123133162596834
+      cities | 0.005095698115283059
+       built | 0.004653566050776515
+     central | 0.004645688160927843
+     islands | 0.004390348338149967
+       areas | 0.0043206004591649656
+== Topic 12 - Geography ==
+        Term | Score     
+      island | 0.005628280465041172
+       river | 0.005457262159275238
+        lake | 0.0052339249246618974
+     largest | 0.004093194768399715
+         sea | 0.004033016379190491
+     pacific | 0.003988220573346494
+     islands | 0.0038271253262335482
+      africa | 0.0037718820309740604
+          ft | 0.003636593954940281
+    southern | 0.003631936932154199
+== Topic 13 - Enteratinment ==
+        Term | Score     
+        game | 0.009338151924530845
+       music | 0.007864098912997834
+      played | 0.007175127637224243
+        team | 0.006688308636032611
+        play | 0.006419767923909895
+       games | 0.006382217187838747
+        film | 0.0062462418880646214
+      player | 0.0057946413273532804
+     players | 0.005756022153934854
+         cup | 0.004714477533119626
+== Topic 14 - Religion ==
+        Term | Score     
+      church | 0.015166030630860056
+         god | 0.0067776415267865545
+   christian | 0.005535244932255207
+   religious | 0.0054999721016964764
+         law | 0.00489860949298711
+    catholic | 0.0046726637416805
+        holy | 0.0035084380721750086
+       roman | 0.0034834338510538088
+    churches | 0.0032681010731410356
+       jesus | 0.003199085572281721
+== Topic 15 - (?) Wales and Islam ==
+        Term | Score     
+       wales | 0.0056921689281643475
+        milk | 0.0036649053771777122
+      family | 0.003570358175989318
+     islamic | 0.0035477114122494688
+      muslim | 0.0033844499481800777
+        food | 0.003229935929458386
+       welsh | 0.0032172529730326105
+       death | 0.0032004388189090446
+    muhammad | 0.0028686772679850123
+     muslims | 0.00279782614289764
+== Topic 16 - Technology/Computers ==
+        Term | Score     
+         gas | 0.005720161982559206
+    computer | 0.005099253036311974
+     windows | 0.004626251828002388
+       metal | 0.004575685262068884
+     systems | 0.004545847206134264
+     process | 0.004064599056652161
+  production | 0.0037271409722588558
+    software | 0.0032672110833791546
+      carbon | 0.0032114065198782077
+      design | 0.00314534640406293
+== Topic 17 - Microbiology and Natural Phenomena ==
+        Term | Score     
+       cells | 0.006687218903830893
+        acid | 0.006563197804452506
+       blood | 0.00637943887210426
+    chemical | 0.005352150618551902
+   hurricane | 0.005269880292734791
+        cell | 0.00519288350349232
+       storm | 0.004648731150936422
+       light | 0.004520157265128514
+        mass | 0.004456135074233481
+       stars | 0.004402038122570436
+== Topic 18 - Energy/General Science ==
+        Term | Score     
+         oil | 0.00879652761998977
+      energy | 0.007429571237922983
+ temperature | 0.006106759533607225
+      plants | 0.005658129971658631
+       black | 0.004898807443865156
+         ice | 0.0047496034417583936
+       solar | 0.004127122000748959
+       plant | 0.0036573793618967627
+       light | 0.003465718288833295
+       glass | 0.0034536346979117294
+== Topic 19 - Art ==
+        Term | Score     
+           · | 0.014179713660526531
+         art | 0.005173823663377079
+        ford | 0.004228820155511976
+    painting | 0.003658127477484413
+         dna | 0.003464188043901953
+        book | 0.0030770505638144127
+        film | 0.002760070119502184
+       death | 0.002754997992648346
+    children | 0.0027164821525380587
+   paintings | 0.002690643495473809
+== Topic 20 - Mathematics ==
+        Term | Score     
+      theory | 0.012220826598914642
+           = | 0.010735936630092448
+     numbers | 0.0077763487906544
+    function | 0.007501421618981484
+      energy | 0.006316456258381185
+       field | 0.0059909914312062645
+       point | 0.004895531027121157
+       space | 0.004658199840297885
+     defined | 0.004371000928581086
+ mathematics | 0.004356542902334043
 </pre>
 </div>
 </div>
@@ -13154,15 +12621,39 @@ latest develop gener organ composit discuss nanocomposit adapt composit biocompo
 </div>
 
 </div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h3 id="2.-Are-you-convinced-by-the-results?-Give-labels-to-the-topics-if-possible.">2. Are you convinced by the results? Give labels to the topics if possible.<a class="anchor-link" href="#2.-Are-you-convinced-by-the-results?-Give-labels-to-the-topics-if-possible.">&#182;</a></h3>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>We are indeed very pleased by the results. 16 out of the 20 topics can be easily labelled (you can see it above).</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Below are all the other test we did by changing tha dataset and/or model hyperparameters. They are experimenal and not annotated like the chosen one above.</p>
+
+</div>
+</div>
+</div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[186]:</div>
+<div class="prompt input_prompt">In&nbsp;[116]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Print the top 5 courses</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;The top five courses together with their similarity score for query facebook&quot;</span><span class="p">)</span>
-<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">):</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">facebook_sim_vals_sorted</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Tried combinations:&#39;</span><span class="p">)</span>
+<span class="nb">list</span><span class="p">(</span><span class="n">small_wiki_lda_models</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
 </pre></div>
 
 </div>
@@ -13179,14 +12670,57 @@ latest develop gener organ composit discuss nanocomposit adapt composit biocompo
 
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>The top five courses together with their similarity score for query facebook
-(&#39;Computational Social Media&#39;, 0.18591143220755649)
-(&#39;Composites technology&#39;, 0.0)
-(&#39;Image Processing for Life Science&#39;, 0.0)
-(&#39;Global business environment&#39;, 0.0)
-(&#39;Electrochemical nano-bio-sensing and bio/CMOS interfaces&#39;, 0.0)
+<pre>Tried combinations:
 </pre>
 </div>
+</div>
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[116]:</div>
+
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>[&#39;b=1.4,a=5.0,high-freq-words-removed&#39;,
+ &#39;b=1.6,a=6.5,high-freq-words-removed&#39;,
+ &#39;b=1.3,a=6.0,high-freq-words-removed&#39;]</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[117]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="nb">list</span><span class="p">(</span><span class="n">wiki_lda_models</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[117]:</div>
+
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>[&#39;b=1.4,a=5.0&#39;]</pre>
+</div>
+
 </div>
 
 </div>
@@ -13197,26 +12731,20 @@ latest develop gener organ composit discuss nanocomposit adapt composit biocompo
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="2.-What-do-you-think-of-the-results?-Give-your-intuition-on-what-is-happening.">2. What do you think of the results? Give your intuition on what is happening.<a class="anchor-link" href="#2.-What-do-you-think-of-the-results?-Give-your-intuition-on-what-is-happening.">&#182;</a></h3>
+<h3 id="Appendix-A:-The-bigger-dataset">Appendix A: The bigger dataset<a class="anchor-link" href="#Appendix-A:-The-bigger-dataset">&#182;</a></h3>
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[187]:</div>
+<div class="prompt input_prompt">In&nbsp;[97]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">count_markov</span> <span class="o">=</span> <span class="mi">0</span>
-<span class="n">count_chain</span> <span class="o">=</span> <span class="mi">0</span>
-<span class="n">count_facebook</span> <span class="o">=</span> <span class="mi">0</span>
-<span class="k">for</span> <span class="n">course</span> <span class="ow">in</span> <span class="n">courses</span><span class="p">:</span>
-    <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">course</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">():</span>
-        <span class="k">if</span> <span class="n">word</span> <span class="o">==</span> <span class="s1">&#39;markov&#39;</span><span class="p">:</span>
-            <span class="n">count_markov</span> <span class="o">+=</span> <span class="mi">1</span>
-        <span class="k">if</span> <span class="n">word</span> <span class="o">==</span> <span class="s1">&#39;chain&#39;</span><span class="p">:</span>
-            <span class="n">count_chain</span> <span class="o">+=</span> <span class="mi">1</span>
-        <span class="k">if</span> <span class="n">word</span> <span class="o">==</span> <span class="s1">&#39;facebook&#39;</span><span class="p">:</span>
-            <span class="n">count_facebook</span> <span class="o">+=</span> <span class="mi">1</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># create a new dictionary of the needed words</span>
+<span class="n">wiki_tokens_filtered</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">wiki_tokens</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">wiki_tokens</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">30</span> <span class="ow">and</span> <span class="n">wiki_tokens</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">10000</span><span class="p">:</span>
+        <span class="n">wiki_tokens_filtered</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">=</span> <span class="n">wiki_tokens</span><span class="p">[</span><span class="n">x</span><span class="p">]</span>
 </pre></div>
 
 </div>
@@ -13226,12 +12754,74 @@ latest develop gener organ composit discuss nanocomposit adapt composit biocompo
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[188]:</div>
+<div class="prompt input_prompt">In&nbsp;[106]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;The number of markov in descriptions is </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">count_markov</span><span class="p">))</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;The number of chain in descriptions is </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">count_chain</span><span class="p">))</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;The number of facebook in descriptions is </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">count_facebook</span><span class="p">))</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">new_dict</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">wiki_tokens_filtered</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+<span class="nb">len</span><span class="p">(</span><span class="n">new_dict</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[106]:</div>
+
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>26445</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[99]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">wikipedia_filtered</span> <span class="o">=</span> <span class="n">wikipedia</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">remove_infreq_terms</span><span class="p">)</span>
+<span class="n">wikipedia_ready_for_lda</span> <span class="o">=</span> <span class="n">wikipedia_filtered</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">prepare_for_lda</span><span class="p">)</span>
+
+<span class="n">wiki_lda_models</span> <span class="o">=</span> <span class="p">{}</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[101]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">n_topics</span> <span class="o">=</span> <span class="mi">20</span>
+<span class="n">wiki_lda_models</span><span class="p">[</span><span class="s1">&#39;b=1.4,a=5.0&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">LDA</span><span class="o">.</span><span class="n">train</span><span class="p">(</span><span class="n">wikipedia_ready_for_lda</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">docConcentration</span><span class="o">=</span><span class="mf">5.0</span><span class="p">,</span> <span class="n">topicConcentration</span><span class="o">=</span><span class="mf">1.4</span><span class="p">,</span> <span class="n">maxIterations</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">n_topics</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[109]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">describe_topics</span><span class="p">(</span><span class="n">wiki_lda_models</span><span class="p">[</span><span class="s1">&#39;b=1.4,a=5.0&#39;</span><span class="p">],</span> <span class="n">new_dict</span><span class="p">,</span> <span class="n">n_words_per_topic</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -13248,9 +12838,246 @@ latest develop gener organ composit discuss nanocomposit adapt composit biocompo
 
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>The number of markov in descriptions is 45
-The number of chain in descriptions is 79
-The number of facebook in descriptions is 3
+<pre>== Topic 1 ==
+        Term | Score     
+         set | 0.0031196105561355912
+           = | 0.0028349265739742433
+     numbers | 0.0022906792451880794
+        work | 0.002119326411685812
+       group | 0.0018831516575068307
+     general | 0.0017318297809583406
+       sheep | 0.0017237004313329944
+        life | 0.001534086612159949
+       power | 0.0015292081916620515
+         art | 0.001492103603869243
+== Topic 2 ==
+        Term | Score     
+   president | 0.0030990026721133606
+       march | 0.0029861868500002794
+      battle | 0.002788773516528671
+        june | 0.0025196996659033306
+        army | 0.00248045098824769
+     january | 0.002474489499467883
+        king | 0.0024387891891476158
+       house | 0.0023444145023939485
+        july | 0.0023279129159369436
+    november | 0.002307022112571861
+== Topic 3 ==
+        Term | Score     
+        acid | 0.005527571968248706
+    chemical | 0.004576397673119443
+      carbon | 0.004103875247906003
+         gas | 0.003976860087041761
+    reaction | 0.00343079006661491
+          °c | 0.003264732231216598
+    hydrogen | 0.00321293436564293
+   compounds | 0.0031234991095578043
+    pressure | 0.002960915212567795
+       metal | 0.002946996504478361
+== Topic 4 ==
+        Term | Score     
+      church | 0.006335512426772917
+        king | 0.00485937943429724
+       roman | 0.004052468775079432
+      empire | 0.0035698613483687433
+     england | 0.0031759412247044064
+       march | 0.0031621822373709115
+     january | 0.0030891560536012892
+        john | 0.0030675256530178717
+        july | 0.0028027267319970833
+    calendar | 0.0026325705445121744
+== Topic 5 ==
+        Term | Score     
+    language | 0.0033599067482515932
+   languages | 0.00287053270015946
+       music | 0.0027283620600482054
+    republic | 0.0026953585556104163
+     country | 0.0023605877888621535
+      player | 0.0020380199352907067
+international | 0.002019099605634953
+      africa | 0.0018639700695072575
+        west | 0.0018082400820828663
+     islands | 0.0017925000514207776
+== Topic 6 ==
+        Term | Score     
+     chinese | 0.005416189618867537
+       china | 0.004998296426863495
+     dynasty | 0.0031240509434623375
+       india | 0.0028949258068852552
+    military | 0.002437369835910391
+        army | 0.002175105107744797
+        khan | 0.002083982495711887
+   political | 0.0018876862171399121
+      indian | 0.0018208096262295101
+       river | 0.001705779069165174
+== Topic 7 ==
+        Term | Score     
+     windows | 0.0028652795613605775
+      soviet | 0.0027525791099150547
+        game | 0.002639854312797178
+      german | 0.002113190095413375
+       party | 0.001967575263789915
+       power | 0.0018952287812286047
+       union | 0.0018852145582869276
+    military | 0.0018733746824862708
+        army | 0.0018005289506531402
+   political | 0.001791930554391779
+== Topic 8 ==
+        Term | Score     
+        test | 0.0028680568648354935
+      series | 0.0023482681690748246
+     england | 0.0017558300251156126
+        work | 0.0015829759690196216
+        game | 0.001554047636652795
+         set | 0.0015470905098391326
+           — | 0.0014721860176716594
+      played | 0.0014668723912949074
+        life | 0.0014580757424874989
+        john | 0.0014497973095662937
+== Topic 9 ==
+        Term | Score     
+         set | 0.0025000440538807465
+     species | 0.00169545777723421
+       river | 0.001584726934387888
+        work | 0.0015110382429101303
+       order | 0.001494984427913327
+  population | 0.0014684854876753012
+        wolf | 0.0014490868644790463
+       major | 0.0014039502957603866
+        long | 0.001354810249631838
+       group | 0.0013272476448268611
+== Topic 10 ==
+        Term | Score     
+       jesus | 0.002375120781564621
+        john | 0.0022786506841725655
+         god | 0.0022022762754461433
+        pope | 0.002102264315856899
+        life | 0.002020858165138936
+        rome | 0.0020140089245683046
+        work | 0.0020134323726543855
+         day | 0.0019851336799266784
+          ii | 0.0019350284076262384
+       march | 0.0018246216770936665
+== Topic 11 ==
+        Term | Score     
+      energy | 0.0065470533672404895
+     nuclear | 0.0033239756119163326
+         oil | 0.002772927500683648
+     surface | 0.0022328977435381913
+ temperature | 0.002197185747524207
+         sea | 0.0019325951321951349
+         due | 0.0018857504416128345
+        mass | 0.0018844894388817552
+       earth | 0.0018819630210475465
+      island | 0.0018388278787806152
+== Topic 12 ==
+        Term | Score     
+       music | 0.00326340322926129
+ instruments | 0.002309598352237496
+  instrument | 0.0022755847684823895
+        open | 0.0021003874150357224
+      centre | 0.0020312226031730775
+       major | 0.0017999845884097338
+        bass | 0.0017586510369348384
+     england | 0.0017392993400805275
+        team | 0.0017030468498502778
+      modern | 0.001664510785639512
+== Topic 13 ==
+        Term | Score     
+     species | 0.003189459337214771
+  population | 0.0022014334223619566
+      israel | 0.00205495620158436
+     million | 0.0020467451802237196
+      hebrew | 0.0019873084118602947
+       comet | 0.0019682128574351797
+      season | 0.0019280196279499314
+       birds | 0.0019099910650241538
+      jewish | 0.0017069464776810707
+       major | 0.0016732849651471952
+== Topic 14 ==
+        Term | Score     
+        game | 0.0022732577220289014
+      theory | 0.0022215567992185325
+       games | 0.001857789654292544
+        work | 0.0017977478883522081
+    universe | 0.0017596077946190416
+       field | 0.0016425894720885597
+       small | 0.0016350685500930637
+           · | 0.001633484582349698
+        test | 0.001613432463381524
+      series | 0.0015271549854769177
+== Topic 15 ==
+        Term | Score     
+       space | 0.00333713723180095
+           = | 0.003107569151901315
+     numbers | 0.0024905969699823443
+         air | 0.0022430351595667097
+         dna | 0.0022190585905477343
+       group | 0.0018969985346603997
+      common | 0.001841459835892553
+      engine | 0.0017390372143087733
+     systems | 0.0017114255752812863
+       small | 0.001681812179032529
+== Topic 16 ==
+        Term | Score     
+       error | 0.0028577544174700283
+        work | 0.0022732214003705334
+      theory | 0.002141141526042395
+           &lt; | 0.002020154562563343
+      series | 0.0017166235671426963
+        life | 0.0016431405875700455
+     related | 0.0015834342489221044
+      modern | 0.001502526468847845
+           = | 0.0014382418572689243
+      common | 0.0013776172561881378
+== Topic 17 ==
+        Term | Score     
+     species | 0.005234589234173428
+           · | 0.003323858793822027
+           ^ | 0.0026414670691261802
+      africa | 0.0023237384923820038
+  population | 0.002240826474343495
+         tea | 0.0022372225155514246
+           • | 0.002207016478206994
+          bc | 0.0018454753976654245
+     history | 0.0017660805660156885
+       india | 0.0017284272327298814
+== Topic 18 ==
+        Term | Score     
+     species | 0.002893930810431895
+  population | 0.001955575103708352
+   hurricane | 0.0018748248292235837
+        food | 0.0018040664295874507
+       black | 0.0017191694260042015
+       river | 0.0017071354062669789
+      island | 0.0016985053035739096
+           · | 0.0016925785531678188
+      famine | 0.0016863465534199987
+     million | 0.0015376844260103428
+== Topic 19 ==
+        Term | Score     
+      theory | 0.0034157438205660723
+    function | 0.003033541505101359
+     disease | 0.0029618964631312307
+       cells | 0.002707117914137504
+       blood | 0.0022649214446242793
+     objects | 0.002185364609054109
+         sun | 0.002175942170305972
+        cell | 0.0020744030995613807
+       human | 0.0020698497528171423
+      common | 0.0019204438990163696
+== Topic 20 ==
+        Term | Score     
+     january | 0.0032730264130038087
+        july | 0.003085071926914488
+       march | 0.0030206694228115914
+   september | 0.0029653296310004004
+    december | 0.0029269017867678765
+      august | 0.0029260717115441905
+     october | 0.002902412389888152
+        june | 0.002848705725548214
+   president | 0.0028320269959317
+    november | 0.0026372156288551516
 </pre>
 </div>
 </div>
@@ -13263,13 +13090,541 @@ The number of facebook in descriptions is 3
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<ul>
-<li>For markov chain, the suggested top five courses look very related to markov chain.For facebook, most of the simirality values of suggested top five courses are 0. This means that this model cannot detect courses that relate to facebook. </li>
-<li>According to the numbers mentioned above, facebook doesn't occur often in the descriptions. Therefore, the result shows that this TF-IDF model can detect courses related to the words which exactly occur in the descriptions many times. However, this model can't detect courses with words that are too concrete and don't occur in the descriptions.</li>
-</ul>
+<h3 id="Appendix-B:-other-models-(on-small-dataset)-with-slightly-worse-performance.">Appendix B: other models (on small dataset) with slightly worse performance.<a class="anchor-link" href="#Appendix-B:-other-models-(on-small-dataset)-with-slightly-worse-performance.">&#182;</a></h3>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[85]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">n_topics</span> <span class="o">=</span> <span class="mi">20</span>
+<span class="n">small_wiki_lda_models</span><span class="p">[</span><span class="s1">&#39;b=1.4,a=5.0,high-freq-words-removed&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">LDA</span><span class="o">.</span><span class="n">train</span><span class="p">(</span><span class="n">small_wikipedia_ready_for_lda</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">docConcentration</span><span class="o">=</span><span class="mf">5.0</span><span class="p">,</span> <span class="n">topicConcentration</span><span class="o">=</span><span class="mf">1.4</span><span class="p">,</span> <span class="n">maxIterations</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">n_topics</span><span class="p">)</span>
+</pre></div>
 
 </div>
 </div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[87]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">describe_topics</span><span class="p">(</span><span class="n">small_wiki_lda_models</span><span class="p">[</span><span class="s1">&#39;b=1.4,a=5.0,high-freq-words-removed&#39;</span><span class="p">],</span> <span class="n">new_small_dict</span><span class="p">,</span> <span class="n">n_words_per_topic</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt"></div>
+
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>== Topic 1 ==
+        Term | Score     
+        game | 0.00415069804290561
+    computer | 0.003459626522167465
+     systems | 0.0024257744338514802
+       games | 0.002402588222501744
+    software | 0.0020078039115267567
+       shark | 0.0018905574898610304
+   computers | 0.0018869806879530852
+     company | 0.0018509332645076924
+      sharks | 0.0017422855479495732
+      famine | 0.0016537680320677576
+== Topic 2 ==
+        Term | Score     
+     disease | 0.005157199232101361
+        food | 0.0024236365316099885
+       human | 0.002300684014700783
+      island | 0.0021607708878110116
+       virus | 0.002052227992131479
+     animals | 0.002031851427541036
+   treatment | 0.0019568643346892767
+   infection | 0.0019564194835861976
+         ice | 0.001941484119743118
+       cases | 0.0018516428847988903
+== Topic 3 ==
+        Term | Score     
+       henry | 0.004026632001088412
+         air | 0.002660808907688986
+    pressure | 0.0019752782063153116
+       blood | 0.0017563704454166495
+           • | 0.001599129811464262
+        army | 0.0013473960110410301
+   published | 0.0013154903036835855
+  production | 0.0013059470683366777
+      france | 0.0013032201924505463
+       india | 0.0012469519906454416
+== Topic 4 ==
+        Term | Score     
+       india | 0.0027115374353555086
+      church | 0.0024121554678476174
+    language | 0.0023434915648768095
+     largest | 0.002274259413391947
+      africa | 0.0021088615105937943
+      centre | 0.00195114481536288
+     central | 0.001896786063599765
+     western | 0.0018842631905836176
+        park | 0.0018253342361363855
+      indian | 0.0017743840187533259
+== Topic 5 ==
+        Term | Score     
+   hurricane | 0.0038460452829250933
+           = | 0.0026609305361077777
+       storm | 0.0023475739743017195
+     numbers | 0.0022712343988068543
+      centre | 0.0022498495953830315
+      polish | 0.002164926658597978
+        line | 0.002132330663011045
+           · | 0.002127967495286249
+           $ | 0.002101964976611596
+      island | 0.001927332119815455
+== Topic 6 ==
+        Term | Score     
+       party | 0.0033355623274992073
+           · | 0.0033269198000032358
+       house | 0.0027998305865650874
+         god | 0.0027991306760458048
+      church | 0.0023508596764241414
+    february | 0.0020383632095738393
+    minister | 0.001954778622941598
+       prime | 0.001827187170725119
+      rights | 0.0017959606022879932
+       death | 0.0017484244522011911
+== Topic 7 ==
+        Term | Score     
+        army | 0.003596005894448389
+    military | 0.0032721500480409242
+      israel | 0.0031700686152417545
+      forces | 0.00300581375162295
+      empire | 0.0029045267750490438
+      battle | 0.0024570814748961275
+      soviet | 0.002311321574831383
+       union | 0.002255863064530636
+        iraq | 0.002149764936355056
+       china | 0.0019866230806336333
+== Topic 8 ==
+        Term | Score     
+        game | 0.004679737895937036
+         cup | 0.004499445149941323
+     windows | 0.004485809503655013
+        test | 0.004229979128896116
+       match | 0.004194324430985312
+        team | 0.004172187208232464
+      played | 0.0032819918617014465
+     players | 0.003239913902542403
+         won | 0.0031574932000823053
+      player | 0.003098021143591988
+== Topic 9 ==
+        Term | Score     
+        mass | 0.0020403881954890106
+       light | 0.0019623034249680706
+      carbon | 0.0015296622257562904
+        acid | 0.001477363304724168
+    standard | 0.0014716731994000945
+      church | 0.0014569531016640595
+     surface | 0.0014415725856988897
+       white | 0.001433221598081642
+         air | 0.0013944276846646342
+     process | 0.0013690906177911079
+== Topic 10 ==
+        Term | Score     
+         dna | 0.004941474585429829
+        cell | 0.0038548824519537184
+       cells | 0.003773762562390753
+     protein | 0.0021337814448044415
+    proteins | 0.002105030240212316
+    february | 0.0020900476348225134
+   structure | 0.0018477857070790975
+      damage | 0.0018381471017852472
+       human | 0.0017848435613858082
+     genetic | 0.001599766993620353
+== Topic 11 ==
+        Term | Score     
+      doctor | 0.0034485863897177594
+      theory | 0.002679171608025247
+     welding | 0.0019874033145323437
+       roman | 0.0019584928338332555
+         arc | 0.0017258927369382744
+     current | 0.0017211769956742408
+     numbers | 0.001624561618482587
+         law | 0.0015596815247261784
+    language | 0.0015145690159491308
+      jewish | 0.001437578800034955
+== Topic 12 ==
+        Term | Score     
+       italy | 0.00269404390698535
+          ii | 0.00240121861258816
+        bass | 0.002334443937923874
+    february | 0.0022906959704232124
+        pope | 0.002206269126889033
+      battle | 0.0019248742344485398
+        rome | 0.0018822830345895272
+      france | 0.0018374921401901076
+         sea | 0.0016694607372367797
+       force | 0.0016243179126059614
+== Topic 13 ==
+        Term | Score     
+           · | 0.004481991604614219
+       music | 0.0029371686031599746
+         bbc | 0.0018699197705910938
+           = | 0.0015720594144312647
+         law | 0.0015322148424160157
+     numbers | 0.0014193684478314079
+       began | 0.0013458842685099288
+     written | 0.0013190486581086047
+      london | 0.0013172488081014684
+     popular | 0.001310548638621072
+== Topic 14 ==
+        Term | Score     
+       music | 0.0051730859610538225
+       album | 0.00337881386973905
+       blood | 0.0031221451278448244
+        show | 0.003025577399101401
+        band | 0.0026576517135138457
+       songs | 0.0022981768109701945
+        film | 0.0021513359677548115
+        song | 0.0019120276610150328
+     vitamin | 0.0017864767400925328
+     popular | 0.0016318753734669517
+== Topic 15 ==
+        Term | Score     
+        acid | 0.004977878036815135
+      energy | 0.0042588285270150255
+    chemical | 0.00259370161795163
+       acids | 0.00227162237278092
+          °c | 0.0022668281045648522
+  production | 0.0022658173238781602
+        food | 0.002246727375292755
+      carbon | 0.0019295608252054407
+     process | 0.0018834609362043857
+   compounds | 0.0018036468137307964
+== Topic 16 ==
+        Term | Score     
+      empire | 0.0023944050315114823
+      church | 0.0023938278285104927
+       house | 0.00204057556044021
+          ii | 0.001972829694906366
+       roman | 0.0019344129999818126
+       death | 0.0019216924033471571
+        died | 0.0018581938602480683
+      france | 0.001840067169909812
+     william | 0.0017764051949096553
+        army | 0.0017203281130721314
+== Topic 17 ==
+        Term | Score     
+       earth | 0.005322931400792913
+       solar | 0.004601741287377251
+         sun | 0.004418004322381946
+    aircraft | 0.004350603513935074
+       stars | 0.004150871178733024
+      planet | 0.00391672825777692
+       space | 0.003649374918612216
+     surface | 0.0034380207896656267
+        mass | 0.0034129664923808383
+     planets | 0.0034073879357211716
+== Topic 18 ==
+        Term | Score     
+       river | 0.0050835701282528015
+         sea | 0.0022637820895686986
+        park | 0.0022378167479451872
+        lake | 0.0021826753507263098
+       ozone | 0.0016859650058552668
+       india | 0.0016346250184627925
+       areas | 0.0016181914576270402
+       tamil | 0.0016079306215796513
+        rock | 0.0015654749960683854
+     largest | 0.0015401516662710364
+== Topic 19 ==
+        Term | Score     
+      energy | 0.005664706983514837
+      theory | 0.004817847223144465
+         oil | 0.004455660783255589
+    universe | 0.0037954017768649746
+     nuclear | 0.0034168754226100136
+     quantum | 0.0032499592634039286
+     physics | 0.002700986873150946
+       light | 0.0026074036402347514
+       field | 0.0025944022741292007
+           = | 0.0025429357312746438
+== Topic 20 ==
+        Term | Score     
+       party | 0.0034993745038150318
+    republic | 0.003450948098020965
+        army | 0.0034146835510539602
+    military | 0.0031104857516844097
+      empire | 0.003099753870940806
+          bc | 0.003079173218595457
+      soviet | 0.003021598361307185
+       roman | 0.0026805138955831418
+    february | 0.002365138883314736
+     chinese | 0.0022554256132453817
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[92]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">n_topics</span> <span class="o">=</span> <span class="mi">18</span>
+<span class="n">small_wiki_lda_models</span><span class="p">[</span><span class="s1">&#39;b=1.6,a=6.5,high-freq-words-removed&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">LDA</span><span class="o">.</span><span class="n">train</span><span class="p">(</span><span class="n">small_wikipedia_ready_for_lda</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">docConcentration</span><span class="o">=</span><span class="mf">6.5</span><span class="p">,</span> <span class="n">topicConcentration</span><span class="o">=</span><span class="mf">1.6</span><span class="p">,</span> <span class="n">maxIterations</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">n_topics</span><span class="p">)</span>
+<span class="n">describe_topics</span><span class="p">(</span><span class="n">small_wiki_lda_models</span><span class="p">[</span><span class="s1">&#39;b=1.6,a=6.5,high-freq-words-removed&#39;</span><span class="p">],</span> <span class="n">new_small_dict</span><span class="p">,</span> <span class="n">n_words_per_topic</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt"></div>
+
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>== Topic 1 ==
+        Term | Score     
+           • | 0.0038233101032554323
+     windows | 0.003556828555775314
+         law | 0.002584417188352744
+    economic | 0.002396568152885979
+   countries | 0.0019435304404840257
+       trade | 0.0017372447725013144
+distribution | 0.001727067714302235
+      public | 0.001712602875972321
+      soviet | 0.0016915539759367166
+     central | 0.0016422084623953087
+== Topic 2 ==
+        Term | Score     
+      church | 0.007612197257441332
+       roman | 0.0038473283341109287
+           = | 0.00209058556682233
+         god | 0.002055196486715275
+      empire | 0.002027453672713741
+    churches | 0.0019716634911392814
+    catholic | 0.001919159955027288
+    function | 0.001870833331571155
+        book | 0.0018679871075588028
+       greek | 0.0018377441300623776
+== Topic 3 ==
+        Term | Score     
+       party | 0.0027194424933237355
+       house | 0.002587449813092005
+        army | 0.002320826103842772
+      church | 0.0021880148926918834
+       death | 0.0020856454282942778
+        book | 0.0019317070035959267
+        rice | 0.001788408680502606
+     william | 0.0017856799001671505
+    military | 0.0017146947722151197
+      social | 0.0016352989068715849
+== Topic 4 ==
+        Term | Score     
+     numbers | 0.0027825292147568175
+           · | 0.0025200407931251956
+      theory | 0.002453229163203108
+       music | 0.0023886955121967973
+           = | 0.0021261899001960307
+      doctor | 0.0015867217597158583
+        band | 0.001447416942314479
+      single | 0.0014052144459149865
+       white | 0.0014015211850062748
+        film | 0.0013799221297549952
+== Topic 5 ==
+        Term | Score     
+       blood | 0.003926441535629721
+    language | 0.0020121889201066855
+       death | 0.0018508541421605495
+      empire | 0.001713430147644857
+     chinese | 0.001690275971993947
+        khan | 0.0016789509927973498
+       human | 0.0016570917952109855
+       roman | 0.0016273051887830683
+          bc | 0.0015383792342900744
+        type | 0.0014930485442521406
+== Topic 6 ==
+        Term | Score     
+       music | 0.0041612096850332765
+        film | 0.0030687795879110915
+        park | 0.0020751860469237875
+      public | 0.0017951202438326488
+      school | 0.001727774992391905
+       apple | 0.0017215035897595475
+     popular | 0.001714054339782223
+    language | 0.001687691330569638
+    republic | 0.001682798816765606
+       river | 0.0016792737092977867
+== Topic 7 ==
+        Term | Score     
+         oil | 0.006434568767267302
+        pope | 0.0040506071722335064
+     disease | 0.003727393854164275
+        rome | 0.0034277905360000417
+       italy | 0.0029581677819025933
+          bc | 0.0029245471127035704
+          ii | 0.0024730141925750305
+       roman | 0.0022717017129786654
+       greek | 0.0022345522104958073
+      athens | 0.002100790676209231
+== Topic 8 ==
+        Term | Score     
+       cells | 0.002920833246930703
+    tropical | 0.0028416554770099097
+   hurricane | 0.002686382129945983
+       storm | 0.0026193110698012455
+        cell | 0.0020966645152812346
+      damage | 0.0020493203093623156
+      cancer | 0.0018188987105873416
+      energy | 0.00172391281609641
+     surface | 0.0016873378890106322
+    pressure | 0.0015881761599788522
+== Topic 9 ==
+        Term | Score     
+        army | 0.002743607014922126
+      battle | 0.002735623536732977
+      forces | 0.0023295739473397905
+       china | 0.0023065538855118564
+     ireland | 0.0021762750413154845
+       force | 0.0020664722856412084
+      soviet | 0.002014689493864942
+       union | 0.0018729300128724076
+      france | 0.001864746665874125
+    republic | 0.0018163493818262404
+== Topic 10 ==
+        Term | Score     
+       river | 0.0028189156956319387
+           = | 0.002019318753182904
+     chinese | 0.0019828956047057353
+       shark | 0.0018283933618693149
+      sharks | 0.001714958496255704
+      theory | 0.0017005917810254127
+       point | 0.0016845691197560325
+       white | 0.0014730685371600227
+      jordan | 0.0014728269417174356
+         sea | 0.0014682438012260264
+== Topic 11 ==
+        Term | Score     
+           · | 0.0035348968441687003
+       space | 0.0028485729778676065
+       error | 0.0025556075270668846
+    universe | 0.0025147361076646273
+     largest | 0.0023118866261897086
+      centre | 0.0022076125900978836
+       china | 0.0020749106127488726
+    economic | 0.0019958174478839712
+        bank | 0.001989957833481039
+         law | 0.00186818838523674
+== Topic 12 ==
+        Term | Score     
+        team | 0.004931635385552882
+        test | 0.004844738866774477
+      played | 0.004324511249716492
+         won | 0.003903605962132161
+       match | 0.003893281670335412
+        game | 0.003833389262593577
+     players | 0.0037361221032456253
+         cup | 0.003713301552351027
+      player | 0.003487794948371589
+   australia | 0.0033531316104876536
+== Topic 13 ==
+        Term | Score     
+        moon | 0.002992997505434062
+        ford | 0.0019653613342325697
+      soviet | 0.001950151941789674
+        army | 0.0018676704840298593
+    february | 0.0018055266153281409
+    military | 0.0016231886356739226
+        film | 0.0015548669241463242
+       lunar | 0.001549697827859181
+         air | 0.0015301819228297816
+          km | 0.001501672011163329
+== Topic 14 ==
+        Term | Score     
+        acid | 0.00542417320907356
+    chemical | 0.0037978855904782604
+         dna | 0.003421684986145791
+    hydrogen | 0.003235117332289797
+      carbon | 0.0031394169784772995
+         gas | 0.003115937909390122
+   compounds | 0.0031006449581831275
+    reaction | 0.002863976449209827
+     process | 0.002421441333498322
+      oxygen | 0.0023675749213451776
+== Topic 15 ==
+        Term | Score     
+    calendar | 0.005657216991432143
+    february | 0.003649981118478227
+      island | 0.002580329116218893
+       house | 0.0022856273634289095
+       music | 0.0021616336629184454
+       wales | 0.001997480123995959
+       party | 0.0019804854688987815
+       actor | 0.0019606410379473965
+     islands | 0.001920882939198139
+    minister | 0.0018622660289803821
+== Topic 16 ==
+        Term | Score     
+        army | 0.0017176522036332293
+      battle | 0.0017002293283157673
+         sea | 0.0016825620479917686
+       music | 0.0016288625561816314
+       began | 0.0014806489169679326
+      europe | 0.0014595480230984474
+      family | 0.0014164329850800171
+      forces | 0.0013770424676938988
+    military | 0.0013523118128247863
+          ii | 0.0013520723926313293
+== Topic 17 ==
+        Term | Score     
+      energy | 0.0026885232130564453
+       light | 0.00197382955970726
+       metal | 0.0018783726729530291
+     current | 0.0017367235886947623
+     welding | 0.0016905252390355492
+         air | 0.001667325543722652
+         gas | 0.001661734997334065
+       point | 0.0014517414660699878
+    material | 0.00143071949830016
+       field | 0.001420843987310844
+== Topic 18 ==
+        Term | Score     
+      energy | 0.0037094260761493495
+           · | 0.0034492755472132603
+       light | 0.0023250955875716113
+       henry | 0.002019125591953503
+        game | 0.0018463070659676584
+       field | 0.00170072667847902
+      theory | 0.0014578900707172444
+     quantum | 0.0014325210872529707
+       mario | 0.0013852801297742664
+        mass | 0.0013353687604586862
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
 </div>
     </div>
   </div>

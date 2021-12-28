@@ -19,5 +19,5 @@ Here we analyze a movie dataset from MovieLens (https://movielens.org/). We use 
 ## Lab 4: Text Representation and Information Retrieval
 We analyze two corpuses of textual data - (1) the course descriptions in EFPL course catalog and (2) wikipedia for schools. Concepts used:
 * **(VSM) Vector Space Models**: Pre-processing real-world data, bag-of-words representation, computing TF-IDF and implementing document search based on it.
-* **(LSI) Latent Semeantix Indexing**: Topic exctraction, document similarity search (query-based) and document-document similarity metric.
+* **(LSI) Latent Semeantic Indexing**: Topic exctraction, document similarity search (query-based) and document-document similarity metric.
 * **(LDA) Latent Dirichlet allocation**: Powerful topic extraction, applied on a large wikipedia-for-schools dataset.
